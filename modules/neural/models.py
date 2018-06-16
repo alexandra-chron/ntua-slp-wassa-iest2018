@@ -1,50 +1,7 @@
-from torch import nn, torch
+from torch import nn
 
-from config import DEVICE
 from modules.neural.attention import SelfAttention
 from modules.neural.modules import Embed, RNNEncoder
-
-
-class ModelHelper:
-    @staticmethod
-    def _sort_by(lengths):
-        """
-        Sort batch data and labels by length.
-        Useful for variable length inputs, for utilizing PackedSequences
-        Args:
-            lengths (neural.Tensor): tensor containing the lengths for the data
-
-        Returns:
-            - sorted lengths Tensor
-            - sort (callable) which will sort a given iterable
-                according to lengths
-            - unsort (callable) which will revert a given iterable to its
-                original order
-
-        """
-        batch_size = lengths.size(0)
-
-        sorted_lengths, sorted_idx = lengths.sort()
-        _, original_idx = sorted_idx.sort(0, descending=True)
-        reverse_idx = torch.linspace(batch_size - 1, 0, batch_size).long()
-
-        reverse_idx = reverse_idx.to(DEVICE)
-
-        sorted_lengths = sorted_lengths[reverse_idx]
-
-        def sort(iterable):
-            if len(iterable.shape) > 1:
-                return iterable[sorted_idx.data][reverse_idx]
-            else:
-                return iterable
-
-        def unsort(iterable):
-            if len(iterable.shape) > 1:
-                return iterable[reverse_idx][original_idx][reverse_idx]
-            else:
-                return iterable
-
-        return sorted_lengths, sort, unsort
 
 
 class Classifier(nn.Module):
@@ -101,3 +58,65 @@ class Classifier(nn.Module):
         logits = self.output(representations)
 
         return logits, attentions
+
+
+class LangModel(nn.Module):
+    def __init__(self, ntokens, **kwargs):
+        super(LangModel, self).__init__()
+
+        self.ntokens = ntokens
+        self.emb_size = kwargs.get("emb_size", 100)
+        self.rnn_size = kwargs.get("rnn_size", 100)
+        self.rnn_layers = kwargs.get("rnn_layers", 1)
+        self.rnn_dropout = kwargs.get("rnn_dropout", .0)
+        self.embed_noise = kwargs.get("embed_noise", .0)
+        self.embed_dropout = kwargs.get("embed_dropout", .0)
+        self.tie_weights = kwargs.get("tie_weights", False)
+        self.pack = kwargs.get("pack", False)
+
+        self.embedding = Embed(ntokens, self.emb_size,
+                               noise=self.embed_noise,
+                               dropout=self.embed_dropout)
+
+        self.encoder = RNNEncoder(input_size=self.emb_size,
+                                  rnn_size=self.rnn_size,
+                                  num_layers=self.rnn_layers,
+                                  bidirectional=False,
+                                  dropout=self.rnn_dropout)
+
+        self.decoder = nn.Linear(self.rnn_size, ntokens)
+
+        if self.tie_weights:
+            self.decoder.weight = self.embedding.embedding.weight
+            if self.rnn_size != self.emb_size:
+                self.down = nn.Linear(self.rnn_size, self.emb_size)
+
+    @staticmethod
+    def hidden2vocab(output, projection):
+        # output_unpacked.size() = batch_size, max_length, hidden_units
+        # flat_outputs = (batch_size*max_length, hidden_units),
+        # which means that it is a sequence of *all* the outputs (flattened)
+        flat_output = output.contiguous().view(output.size(0) * output.size(1),
+                                               output.size(2))
+
+        # the sequence of all the output projections
+        decoded_flat = projection(flat_output)
+
+        # reshaped the flat sequence of decoded words,
+        # in the original (reshaped) form (3D tensor)
+        decoded = decoded_flat.view(output.size(0), output.size(1),
+                                    decoded_flat.size(1))
+        return decoded
+
+    def forward(self, x, hidden=None, lengths=None):
+        # embed and regularize the words
+        x = self.embedding(x)
+
+        output, hidden = self.encoder(x, hidden, lengths)
+
+        if self.tie_weights and self.rnn_size != self.emb_size:
+            output = self.down(output)
+
+        decoded = self.hidden2vocab(output, self.decoder)
+
+        return decoded, hidden

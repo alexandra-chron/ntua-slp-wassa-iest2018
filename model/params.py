@@ -21,6 +21,23 @@ SEMEVAL_2017 = {
     "weight_decay": 0.0,
     "clip_norm": 1,
 }
+WASSA_CONF = {
+    "name": "WASSA",
+    "batch_train": 32,
+    "batch_eval": 32,
+    "epochs": 100,
+    "encoder_size": 300,
+    "encoder_dropout": 0.3,
+    "encoder_layers": 1,
+    "encoder_bidirectional": False,
+    "embed_finetune": False,
+    "embed_noise": 0.1,
+    "embed_dropout": 0.1,
+    "base": 0.68,
+    "patience": 10,
+    "weight_decay": 0.0,
+    "clip_norm": 1,
+}
 WASSA_2018 = {
     "name": "WASSA_2018",
     "token_type": "word",
@@ -47,4 +64,22 @@ WASSA_2018 = {
     "clip_norm": 1,
     "tie_weights": False
 
+}
+
+ConfLangModel = {
+    "name": "LM",
+    "batch_size": 32,
+    "epochs": 100,
+    "emb_size": 400,
+    "rnn_size": 400,
+    "rnn_layers": 2,
+    "rnn_mode": "LSTM",
+    "rnn_dropout": 0.3,
+    "weight_decay": 0.0,
+    "embed_noise": 0.1,
+    "embed_dropout": 0.3,
+    "tie_weights": True,
+    "bptt": 50,
+    "clip": 1,
+    "pack": True,
 }
