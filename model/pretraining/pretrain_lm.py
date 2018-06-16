@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 
-# from dataloaders.get_files import load_data_from_dir
+from dataloaders.get_files import load_data_from_dir
 from logger.experiment import Experiment, Metric
 from config import DEVICE, DATA_DIR
 from model.params import SEMEVAL_2017
@@ -24,9 +24,9 @@ from utils.training import save_checkpoint, epoch_summary
 config = SEMEVAL_2017
 os.path.join(DATA_DIR, 'semeval_2017_4A')
 
-# train = load_data_from_dir(os.path.join(DATA_DIR, 'semeval_2017_4A'))
-# X = [obs[1] for obs in train]
-# y = [obs[0] for obs in train]
+train = load_data_from_dir(os.path.join(DATA_DIR, 'semeval_2017_4A'))
+X = [obs[1] for obs in train]
+y = [obs[0] for obs in train]
 #
 # X_train, X_test, y_train, y_test = train_test_split(X, y,
 #                                                     test_size=0.05,
@@ -36,7 +36,7 @@ with open("preprocessedtrain.txt", 'rb') as f:
     X_train = torch.load(f)
 with open("preprocessedtest.txt", 'rb') as f:
     X_test = torch.load(f)
-
+#
 X_train = [' '.join(x) for x in X_train]
 X_test = [' '.join(x) for x in X_test]
 # word2idx, idx2word, embeddings = load_embeddings(config)
@@ -47,7 +47,6 @@ X_test = [' '.join(x) for x in X_test]
 def tokenize(text):
     return text.lower().split()
 
-datasets={}
 
 train_set = LangModelDataset(X_train, tokenize=tokenize,
                              seq_len=50, name='train_set',
@@ -84,7 +83,7 @@ loss_function = torch.nn.CrossEntropyLoss(ignore_index=0)
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = torch.optim.Adam(parameters, amsgrad=True)
 # scheduler = ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=5)
-scheduler = MultiStepLR(optimizer, milestones=[20, 30], gamma=0.1)
+# scheduler = MultiStepLR(optimizer, milestones=[20, 30], gamma=0.1)
 
 #############################################################
 # Experiment
@@ -101,7 +100,7 @@ best_loss = None
 for epoch in range(config["epochs"]):
     start_time = time.time()
 
-    scheduler.step()
+    # scheduler.step()
 
     avg_loss = train_sent_lm(epoch, model, train_loader, ntokens,
                              loss_function, config["batch_train"], optimizer,
@@ -112,9 +111,9 @@ for epoch in range(config["epochs"]):
     ############################################################
     # epoch summary
     ############################################################
-    lr = scheduler.optimizer.param_groups[0]['lr']
+    # lr = scheduler.optimizer.param_groups[0]['lr']
     duration = (time.time() - start_time)
-    print("\tTime:{:5.2f}s, LR:{}".format(duration, lr))
+    # print("\tTime:{:5.2f}s, LR:{}".format(duration, lr))
 
     experiment.metrics["loss"].append(tag="train", value=avg_loss)
     experiment.metrics["ppl"].append(tag="train", value=math.exp(avg_loss))
@@ -131,7 +130,7 @@ for epoch in range(config["epochs"]):
     # Save the model if the validation loss is the best we've seen so far.
     if not best_loss or avg_val_loss < best_loss:
         print("saving checkpoint...")
-        save_checkpoint(config["name"], model, optimizer)
+        save_checkpoint(config["name"], model, optimizer, timestamp=True)
         best_loss = avg_val_loss
 
     print()

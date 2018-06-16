@@ -59,6 +59,21 @@ def parse_file(file):
         data[tweet_id] = (sentiment, text)
     return data
 
+def parse_file_2(file):
+    """
+    Read a file and return a dictionary of the data, in the format:
+    line_id:{emotion, text}
+    """
+
+    data = {}
+    lines = open(file, "r", encoding="utf-8").readlines()
+    for line_id, line in enumerate(lines):
+        columns = line.rstrip().split("\t")
+        emotion = columns[0]
+        text = columns[1:]
+        text = clean_text(" ".join(text))
+        data[line_id] = (emotion, text)
+    return data
 
 def load_data_from_dir(path):
     FILE_PATH = os.path.dirname(__file__)
@@ -70,5 +85,17 @@ def load_data_from_dir(path):
     data = {}  # use dict, in order to avoid having duplicate tweets (same id)
     for file in files:
         file_data = parse_file(file)
+        data.update(file_data)
+    return list(data.values())
+
+def load_data_from_dir_2(path):
+    FILE_PATH = os.path.dirname(__file__)
+    files_path = os.path.join(FILE_PATH, path)
+
+    files = glob.glob(files_path + "/*.csv", recursive=True)
+
+    data = {}
+    for file in files:
+        file_data = parse_file_2(file)
         data.update(file_data)
     return list(data.values())
