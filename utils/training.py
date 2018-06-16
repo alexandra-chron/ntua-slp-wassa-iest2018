@@ -4,7 +4,9 @@ import os
 import sys
 import time
 
+import numpy
 import torch
+from sklearn.utils import compute_class_weight
 
 from config import BASE_PATH
 
@@ -67,7 +69,8 @@ def timeSince(since, percent):
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
 
-def progress(loss, epoch, batch, batch_size, dataset_size,  interval):
+def progress(loss, epoch, batch, batch_size, dataset_size, start, interval,
+             ppl=False):
     batches = math.ceil(float(dataset_size) / batch_size)
 
     if batch % interval != 0 and batch != batches:
@@ -79,14 +82,18 @@ def progress(loss, epoch, batch, batch_size, dataset_size,  interval):
 
     log_bar = '=' * filled_len + '-' * (bar_len - filled_len)
 
-    log_losses = 'Loss:{:.2f}, PPL:{:.2f}'.format(loss, math.exp(loss))
+    if ppl:
+        log_losses = 'Loss:{:.2f}, PPL:{:.2f}'.format(loss, math.exp(loss))
+    else:
+        log_losses = 'Loss:{:.2f}'.format(loss)
     log_epoch = 'Epoch {}'.format(epoch)
     log_batches = 'Batch {}/{}'.format(batch, batches)
-    # time_info = 'Time {}'.format(timeSince(start, batch / batches))
-    _progress_str = "\r \r [{}] {}, {} - {}".format(log_bar,
+    time_info = 'Time {}'.format(timeSince(start, batch / batches))
+    _progress_str = "\r \r [{}] {}, {} - {} - {}".format(log_bar,
                                                          log_epoch,
                                                          log_batches,
-                                                         log_losses)
+                                                         log_losses,
+                                                         time_info)
     sys.stdout.write(_progress_str)
     sys.stdout.flush()
 
@@ -127,12 +134,45 @@ def epoch_summary(dataset, loss):
     print(msg.format(dataset, loss, math.exp(loss)))
 
 
+def get_class_labels(y):
+    """
+    Get the class labels
+    :param y: list of labels, ex. ['positive', 'negative', 'positive',
+                                    'neutral', 'positive', ...]
+    :return: sorted unique class labels
+    """
+    return numpy.unique(y)
+
+
+def get_class_weights(y):
+    """
+    Returns the normalized weights for each class
+    based on the frequencies of the samples
+    :param y: list of true labels (the labels must be hashable)
+    :return: dictionary with the weight for each class
+    """
+
+    weights = compute_class_weight('balanced', numpy.unique(y), y)
+
+    d = {c: w for c, w in zip(numpy.unique(y), weights)}
+
+    return d
+
+
+def class_weigths(targets, to_pytorch=False):
+    w = get_class_weights(targets)
+    labels = get_class_labels(targets)
+    if to_pytorch:
+        return torch.FloatTensor([w[l] for l in sorted(labels)])
+    return labels
+
+
 def sort_by_lengths(lengths):
     """
     Sort batch data and labels by length.
     Useful for variable length inputs, for utilizing PackedSequences
     Args:
-        lengths (nn.Tensor): tensor containing the lengths for the data
+        lengths (neural.Tensor): tensor containing the lengths for the data
 
     Returns:
         - sorted lengths Tensor

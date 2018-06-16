@@ -2,31 +2,22 @@
 Model for sentiment classification (positive,negative,neutral)
 for
 """
-import math
 import os
-import time
 
 import torch
 from sklearn.model_selection import train_test_split
-from torch.optim.lr_scheduler import MultiStepLR
-from torch.utils.data import DataLoader
 
-from dataloaders.get_files import load_data_from_dir, load_data_from_dir_2
-from logger.experiment import Experiment, Metric
+from utils.dataloaders import load_wassa
 from config import DEVICE, DATA_DIR
 from logger.training import LabelTransformer
 from model.params import WASSA_2018
-from modules.nn.dataloading import LangModelDataset
-from modules.nn.models import LangModel, ModelWrapper
-from modules.sent_lm_trainer import train_sent_lm, eval_sent_lm
+from modules.neural.models import LangModel, ModelWrapper
 from utils.train import get_pretrained, load_embeddings, load_datasets
-
-from utils.training import save_checkpoint, epoch_summary
 
 config = WASSA_2018
 os.path.join(DATA_DIR, 'wassa_2018')
 
-train = load_data_from_dir_2(os.path.join(DATA_DIR, 'wassa_2018'))
+train = load_wassa(os.path.join(DATA_DIR, 'wassa_2018'))
 X = [obs[1] for obs in train]
 y = [obs[0] for obs in train]
 
