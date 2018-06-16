@@ -132,7 +132,7 @@ def sort_by_lengths(lengths):
     Sort batch data and labels by length.
     Useful for variable length inputs, for utilizing PackedSequences
     Args:
-        lengths (nn.Tensor): tensor containing the lengths for the data
+        lengths (neural.Tensor): tensor containing the lengths for the data
 
     Returns:
         - sorted lengths Tensor
