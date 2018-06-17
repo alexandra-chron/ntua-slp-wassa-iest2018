@@ -243,8 +243,9 @@ class WordDataset(BaseDataset):
 
 
 class LangModelDataset(BaseDataset):
-    def __init__(self, data, seq_len=0, preprocess=None, vocab=None,
-                 vocab_size=None):
+    def __init__(self, data, max_length=0,
+                 name=None, preprocess=None,
+                 vocab=None, vocab_size=None):
         """
 
         Args:
@@ -255,7 +256,7 @@ class LangModelDataset(BaseDataset):
             the dataset will be split to small sequences of bptt size.
             vocab (Vocab): a vocab instance.
         """
-        super().__init__()
+        super().__init__(name)
 
         if preprocess is not None:
             self.preprocess = preprocess
@@ -263,7 +264,7 @@ class LangModelDataset(BaseDataset):
             self.preprocess = lambda x: [_x.lower().split() for _x in x]
 
         # step 1 - tokenize the dataset
-        self.data, self.vocab = self.prepared_data()
+        self.data, self.vocab = self.prepared_data(data)
 
         # step 2 - build the vocabulary
         if vocab is not None:
@@ -271,10 +272,18 @@ class LangModelDataset(BaseDataset):
         else:
             self.vocab.build(vocab_size)
 
+        # step 3 - define max_length
+        # If not passed then use dataset's max length
+        if max_length == 0:
+            self.max_length = max([len(x) for x in self.data])
+        else:
+            self.max_length = max_length
+
     def prepare(self, data):
         _data = []
         _vocab = Vocab()
-        for line in data:
+        desc = "PreProcessing dataset {}...".format(self.name)
+        for line in tqdm(data, desc=desc):
             tokens = self.preprocess(line)
             _vocab.read_tokens(tokens)
             tokens.append(_vocab.EOS)
@@ -285,11 +294,13 @@ class LangModelDataset(BaseDataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        data = vectorize(self.inputs[index],
-                         self.vocab.tok2id,
-                         self.seq_len)
-        targets = vectorize(self.targets[index],
-                            self.vocab.tok2id,
-                            self.seq_len)
 
-        return data, targets, len(self.inputs[index])
+        inputs = self.data[index]
+        targets = inputs[1:]
+
+        inputs = vectorize(inputs, self.vocab.tok2id, self.max_length)
+        targets = vectorize(targets, self.vocab.tok2id, self.max_length)
+
+        length = min(len(self.data[index]), self.max_length)
+
+        return inputs, targets, length

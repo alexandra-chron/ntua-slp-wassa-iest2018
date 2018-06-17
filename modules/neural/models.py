@@ -1,5 +1,5 @@
 from torch import nn
-
+import torch.nn.functional as F
 from modules.neural.attention import SelfAttention
 from modules.neural.modules import Embed, RNNEncoder
 
@@ -108,14 +108,22 @@ class LangModel(nn.Module):
                                     decoded_flat.size(1))
         return decoded
 
+    def pad_outputs(self, outputs, max_length):
+        pad_length = max_length - outputs.size(1)
+        outputs = F.pad(outputs, (0, 0, 0, pad_length))
+        return outputs
+
     def forward(self, x, hidden=None, lengths=None):
         # embed and regularize the words
         x = self.embedding(x)
 
-        output, hidden = self.encoder(x, hidden, lengths)
+        output, hidden = self.encoder(x, lengths, hidden)
 
         if self.tie_weights and self.rnn_size != self.emb_size:
             output = self.down(output)
+
+        # pad to initial max length
+        output = self.pad_outputs(output, x.size(1))
 
         decoded = self.hidden2vocab(output, self.decoder)
 

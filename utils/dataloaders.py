@@ -64,6 +64,14 @@ def parse_file(file):
     return data
 
 
+def sentence_dataset(file):
+    data = []
+    with open(file, "r", encoding="utf-8") as f:
+        for line in f:
+            data.append(line.rstrip())
+        return data
+
+
 def load_data_from_dir(path):
     FILE_PATH = os.path.dirname(__file__)
     files_path = os.path.join(FILE_PATH, path)

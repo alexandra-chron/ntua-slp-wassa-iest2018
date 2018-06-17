@@ -68,18 +68,19 @@ WASSA_2018 = {
 
 ConfLangModel = {
     "name": "LM",
-    "batch_size": 32,
+    "batch_train": 32,
+    "batch_eval": 32,
     "epochs": 100,
     "emb_size": 400,
     "rnn_size": 400,
-    "rnn_layers": 2,
+    "rnn_layers": 1,
     "rnn_mode": "LSTM",
     "rnn_dropout": 0.3,
     "weight_decay": 0.0,
     "embed_noise": 0.1,
     "embed_dropout": 0.3,
     "tie_weights": True,
-    "bptt": 50,
+    "max_length": 50,
     "clip": 1,
     "pack": True,
 }

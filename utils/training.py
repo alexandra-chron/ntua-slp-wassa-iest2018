@@ -224,7 +224,7 @@ def debug_s2s_batch(outputs, labels, datasource):
         print()
 
 
-def save_checkpoint(name, model, optimizer, path=None, timestamp=False):
+def save_checkpoint(name, model, optimizer, vocab, path=None, timestamp=False):
     """
     Save a trained model, along with its optimizer, in order to be able to
     resume training
@@ -250,7 +250,7 @@ def save_checkpoint(name, model, optimizer, path=None, timestamp=False):
         path = os.path.join(BASE_PATH, "checkpoints")
 
     # save pytorch model
-    torch.save([model, optimizer], os.path.join(path, model_fname))
+    torch.save([model, optimizer, vocab], os.path.join(path, model_fname))
 
 
 def load_checkpoint(name, path=None):

@@ -68,7 +68,7 @@ class RNNEncoder(nn.Module):
         else:
             return self.last_by_index(outputs, lengths)
 
-    def forward(self, embs, lengths):
+    def forward(self, embs, lengths, hidden=None):
         """
         This is the heart of the model. This function, defines how the data
         passes through the network.
@@ -83,7 +83,7 @@ class RNNEncoder(nn.Module):
         packed = pack_padded_sequence(embs, list(lengths.data),
                                       batch_first=True)
 
-        out_packed, _ = self.rnn(packed)
+        out_packed, _ = self.rnn(packed, hidden)
 
         # unpack output - no need if we are going to use only the last outputs
         outputs, _ = pad_packed_sequence(out_packed, batch_first=True)
