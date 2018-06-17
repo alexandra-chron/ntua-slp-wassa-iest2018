@@ -73,7 +73,7 @@ ConfLangModel = {
     "epochs": 100,
     "emb_size": 400,
     "rnn_size": 400,
-    "rnn_layers": 1,
+    "rnn_layers": 2,
     "rnn_mode": "LSTM",
     "rnn_dropout": 0.3,
     "weight_decay": 0.0,
