@@ -11,7 +11,7 @@ def tokenize(text, lowercase=True):
     return text.split()
 
 
-def twitter_preprocess():
+def twitter_preprocessor():
     preprocessor = TextPreProcessor(
         normalize=['url', 'email', 'percent', 'money', 'phone', 'user',
                    'time',
@@ -28,6 +28,11 @@ def twitter_preprocess():
         tokenizer=SocialTokenizer(lowercase=True).tokenize,
         dicts=[emoticons]
     ).pre_process_doc
+    return preprocessor
+
+
+def twitter_preprocess():
+    preprocessor = twitter_preprocessor()
 
     def preprocess(name, dataset):
         desc = "PreProcessing dataset {}...".format(name)

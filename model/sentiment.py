@@ -14,7 +14,7 @@ from modules.neural.dataloading import WordDataset
 from modules.neural.models import Classifier
 from utils.dataloaders import load_data_from_dir
 from utils.load_embeddings import load_word_vectors
-from utils.nlp import twitter_preprocess
+from utils.nlp import twitter_preprocess, twitter_preprocessor
 from utils.training import class_weigths
 
 # load embeddings
@@ -42,7 +42,7 @@ y_test = label_encoder.transform(y_test)
 #####################################################################
 # Define Dataloaders
 #####################################################################
-preprocessor = twitter_preprocess()
+preprocessor = twitter_preprocessor()
 train_set = WordDataset(X_train, y_train, word2idx, name="sent_train",
                         preprocess=preprocessor)
 test_set = WordDataset(X_test, y_test, word2idx, name="sent_test",
