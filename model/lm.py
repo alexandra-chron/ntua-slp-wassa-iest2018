@@ -1,3 +1,4 @@
+import datetime
 import math
 import os
 
@@ -64,6 +65,9 @@ experiment.add_metric(Metric(name="ppl", tags=["train", "val"],
                              vis_type="line"))
 
 best_loss = None
+
+now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
+
 for epoch in range(config["epochs"]):
 
     scheduler.step()
@@ -95,7 +99,7 @@ for epoch in range(config["epochs"]):
     # Save the model if the validation loss is the best we've seen so far.
     if not best_loss or avg_val_loss < best_loss:
         print("saving checkpoint...")
-        save_checkpoint(dataset, model, optimizer, train_set.vocab)
+        save_checkpoint("{}_{}".format(dataset, now), model, optimizer, train_set.vocab, timestamp=False)
         best_loss = avg_val_loss
 
     print()
