@@ -19,7 +19,7 @@ from modules.neural.models import Classifier
 from utils.dataloaders import clean_text
 from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
-from utils.training import sort_by_lengths
+from utils.training import sort_by_lengths, load_checkpoint
 
 _config = WASSA_CONF
 
@@ -39,7 +39,7 @@ def load_test_wassa(dataset):
 
     _X = []
 
-    if dataset=='dev':
+    if dataset=='dev' or dataset=='train':
         lines = open(file, "r", encoding="utf-8").readlines()
         for line_id, line in enumerate(lines):
             columns = line.rstrip().split("\t")
@@ -79,7 +79,7 @@ def test_clf(model, data_source, device):
 
     with torch.no_grad():
         for i_batch, batch in tqdm(enumerate(data_source, 1),
-                                   desc="calculating..."):
+                                   desc="calculating posteriors..."):
             posts, attentions, y = process_batch_test_clf(model,
                                                           batch,
                                                           device)
@@ -102,9 +102,15 @@ def write_predictions(predictions, encoder):
 def submission(dataset, pretrained_emb=False):
 
     X = load_test_wassa(dataset)
-    with open("label_encoder", "rb") as f:
+    X=X[:10000]
+    # this code is tested for a small part of the train set
+    # so the line above must be erased and everything works fine!
+
+    with open("label_encoder.pkl", "rb") as f:
         label_encoder = pickle.load(f)
 
+    # so far this code is implemented for evaluating models that use pretrained word embedding
+    # NOT Language Model as pretrained model!
     if pretrained_emb:
         # load embeddings
         file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
@@ -112,28 +118,42 @@ def submission(dataset, pretrained_emb=False):
 
         dummy_y = [[0] * 6] * len(X)
         dummy_y = torch.tensor(dummy_y)
+
         #####################################################################
         # Define Dataloaders
         #####################################################################
         preprocessor = twitter_preprocessor()
+        # for new experiments remember to empty _cache!
         test_set = WordDataset(X, dummy_y, word2idx, name="wassa_test", max_length=50,
                                preprocess=preprocessor)
         sampler = SequentialSampler(test_set)
 
         test_loader = DataLoader(test_set, batch_size=_config["batch_eval"],
                                  sampler=sampler)
-        file = os.path.join(BASE_PATH, "checkpoints", "wassa")
-        with open(file, "rb") as f:
-            model = torch.load(f)
 
+        #####################################################################
+        # Load Trained Model
+        #####################################################################
+        checkpoint_name = "wassa_18-06-17_21:19:58"
+        model, optimizer, vocab = load_checkpoint(checkpoint_name)
+        model.eval()
+        model.to(config.DEVICE)
         print(model)
 
+        #####################################################################
+        # Evaluate Trained Model on test set & Calculate predictions
+        #####################################################################
         labels, predicted = test_clf(model=model, data_source=test_loader,
                                            device=config.DEVICE)
         pprint(labels)
         pprint(predicted)
 
+        #####################################################################
+        # Create submission file with the predictions
+        #####################################################################
         write_predictions(predicted, label_encoder)
 
 
-submission(dataset="dev", pretrained_emb=True)
+submission(dataset="train", pretrained_emb=True)
+# dataset = "train", "dev", or "test"
+# they should be stored in /datasets/wassa_2018

@@ -29,7 +29,7 @@ X_train, X_test, y_train, y_test = load_wassa()
 # 3 - convert labels from strings to integers
 label_encoder = LabelEncoder()
 label_encoder = label_encoder.fit(y_train)
-with open("../submissions/label_encoder", "wb") as r:
+with open("../submissions/label_encoder.pkl", "wb") as r:
     pickle.dump(label_encoder, r)
 y_train = label_encoder.transform(y_train)
 y_test = label_encoder.transform(y_test)
