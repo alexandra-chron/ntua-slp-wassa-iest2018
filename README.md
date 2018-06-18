@@ -11,7 +11,7 @@ In order to make our codebase more accessible and easier to extend, we provide a
 
 `embeddings`: the word embedding files used should be put here (i.e. word2vec)
 
-`model`: scripts for running wassa classifier (wassa.py) and SemEval2017 Task4 classifier (sentiment.py), language model (lm.py)
+`model`: scripts for running wassa classifier (wassa.py) SE17 Task4 classifier (sentiment.py), language model (lm.py)
 
 `modules`: the source code of the PyTorch deep-learning models and the baseline models.
 
