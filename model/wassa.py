@@ -90,5 +90,6 @@ for epoch in range(1, config["epochs"] + 1):
     # Save the model if the validation loss is the best we've seen so far.
     if not best_loss or avg_val_loss < best_loss:
         print("saving checkpoint...")
-        save_checkpoint("{}_{}".format("wassa", now), model, optimizer, timestamp=False)
+        save_checkpoint("{}_{}".format("wassa", now), model, optimizer, loss=avg_val_loss, acc=acc(y, y_pred),
+                        timestamp=False)
         best_loss = avg_val_loss

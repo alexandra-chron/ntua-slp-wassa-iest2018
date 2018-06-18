@@ -101,7 +101,7 @@ def write_predictions(predictions, encoder):
 
 def submission(dataset, pretrained_emb=False):
 
-    # X = load_test_wassa(dataset)
+    X = load_test_wassa(dataset)
     with open("label_encoder", "rb") as f:
         label_encoder = pickle.load(f)
 
