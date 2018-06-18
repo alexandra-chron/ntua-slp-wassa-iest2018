@@ -2,6 +2,8 @@ import os
 import pickle
 
 import datetime
+
+import torch
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder
 from torch.nn import CrossEntropyLoss
@@ -9,8 +11,9 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from config import BASE_PATH, DEVICE
-from model.params import WASSA_CONF, WASSA_BASELINE
+from model.params import WASSA_WITH_PRETR_LM
 from model.pipelines import train_clf, eval_clf
+from modules.neural.attention import SelfAttention
 from modules.neural.dataloading import WordDataset
 from modules.neural.models import Classifier
 from utils.dataloaders import load_wassa
@@ -18,39 +21,56 @@ from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
 from utils.training import class_weigths, save_checkpoint, load_checkpoint
 
-pretrained = False
-
-# load embeddings
+pretrained = True
+# len(word2idx) = 804870
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
-word2idx, idx2word, weights = load_word_vectors(file, 300)
+_, _, weights = load_word_vectors(file, 300)
 
 # load dataset
-config = WASSA_CONF
+config = WASSA_WITH_PRETR_LM
 X_train, X_test, y_train, y_test = load_wassa()
 
 # 3 - convert labels from strings to integers
 label_encoder = LabelEncoder()
 label_encoder = label_encoder.fit(y_train)
-with open("../submissions/label_encoder.pkl", "wb") as r:
-    pickle.dump(label_encoder, r)
 y_train = label_encoder.transform(y_train)
 y_test = label_encoder.transform(y_test)
+
+# Load Pretrained LM
+pretr_model, pretr_optimizer, pretr_vocab = load_checkpoint("twitter100K_18-06-17_18:22:44")
+pretr_model.to(DEVICE)
+
+# Force target task to use pretrained vocab
+word2idx = pretr_vocab.tok2id
+idx2word = pretr_vocab.id2tok
+ntokens = pretr_vocab.size
 
 #####################################################################
 # Define Dataloaders
 #####################################################################
+
 preprocessor = twitter_preprocessor()
-train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train",
+train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train_pretr_lm",
                         preprocess=preprocessor)
-test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test",
+test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test_pretr_lm",
                        preprocess=preprocessor)
 train_loader = DataLoader(train_set, config["batch_train"], shuffle=True,
                           drop_last=True)
 test_loader = DataLoader(test_set, config["batch_eval"])
 
 classes = label_encoder.classes_.size
+
+# Define model, without pretrained embeddings
 model = Classifier(embeddings=weights, out_size=classes, **config).to(DEVICE)
+
+# Transfer Learning, force target task to inherit parent task weights
+# except for linear layer (pretrained was LM, target is 6 classes classifier)
+
+
+model.embedding = pretr_model.embedding
+model.encoder = pretr_model.encoder
 print(model)
+
 
 weights = class_weigths(train_set.labels, to_pytorch=True)
 weights = weights.to(DEVICE)
@@ -58,11 +78,6 @@ criterion = CrossEntropyLoss(weight=weights)
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = Adam(parameters, amsgrad=True)
 
-if pretrained:
-    pretr_model, pretr_optimizer, pretr_vocab = load_checkpoint("sentiment_18-06-17_21:11:42")
-    pretr_model.to(DEVICE)
-    pretr_model.output = model.output
-    model = pretr_model
 
 #############################################################################
 # Training Pipeline

@@ -38,6 +38,42 @@ WASSA_CONF = {
     "weight_decay": 0.0,
     "clip_norm": 1,
 }
+WASSA_BASELINE = {
+    "name": "WASSA_BASELINE",
+    "batch_train": 32,
+    "batch_eval": 32,
+    "epochs": 100,
+    "encoder_size": 200,
+    "encoder_dropout": 0.3,
+    "encoder_layers": 2,
+    "encoder_bidirectional": False,
+    "embed_finetune": False,
+    "embed_noise": 0.1,
+    "embed_dropout": 0.1,
+    "base": 0.68,
+    "patience": 10,
+    "weight_decay": 0.0,
+    "clip_norm": 1,
+}
+WASSA_WITH_PRETR_LM = {
+    "name": "WASSA_WITH_PRETR_LM",
+    "batch_train": 32,
+    "batch_eval": 32,
+    "epochs": 100,
+    "encoder_size": 400,
+    "encoder_dropout": 0.3,
+    "encoder_layers": 2,
+    "encoder_bidirectional": False,
+    "embed_finetune": False,
+    "embed_noise": 0.1,
+    "embed_dropout": 0.3,
+    "base": 0.68,
+    "patience": 10,
+    "weight_decay": 0.0,
+    "clip_norm": 1,
+    "tie_weights": False
+
+}
 WASSA_2018 = {
     "name": "WASSA_2018",
     "token_type": "word",
