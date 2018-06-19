@@ -59,9 +59,9 @@ scheduler = MultiStepLR(optimizer, milestones=[20, 30], gamma=0.1)
 # Experiment
 #############################################################
 experiment = Experiment(config["name"], hparams=config)
-experiment.add_metric(Metric(name="loss", tags=["train", "val"],
+experiment.add_metric(Metric(name="loss_lm", tags=["train", "val"],
                              vis_type="line"))
-experiment.add_metric(Metric(name="ppl", tags=["train", "val"],
+experiment.add_metric(Metric(name="ppl_lm", tags=["train", "val"],
                              vis_type="line"))
 
 best_loss = None
@@ -84,11 +84,11 @@ for epoch in range(config["epochs"]):
     lr = scheduler.optimizer.param_groups[0]['lr']
     print("\tLR:{}".format(lr))
 
-    experiment.metrics["loss"].append(tag="train", value=avg_loss)
-    experiment.metrics["ppl"].append(tag="train", value=math.exp(avg_loss))
+    experiment.metrics["loss_lm"].append(tag="train", value=avg_loss)
+    experiment.metrics["ppl_lm"].append(tag="train", value=math.exp(avg_loss))
 
-    experiment.metrics["loss"].append(tag="val", value=avg_val_loss)
-    experiment.metrics["ppl"].append(tag="val", value=math.exp(avg_val_loss))
+    experiment.metrics["loss_lm"].append(tag="val", value=avg_val_loss)
+    experiment.metrics["ppl_lm"].append(tag="val", value=math.exp(avg_val_loss))
 
     epoch_summary("train", avg_loss)
     epoch_summary("val", avg_val_loss)

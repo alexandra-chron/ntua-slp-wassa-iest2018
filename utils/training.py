@@ -270,6 +270,6 @@ def load_checkpoint(name, path=None):
     model_fname = os.path.join(path, "{}.pt".format(name))
 
     with open(model_fname, 'rb') as f:
-        model, optimizer, vocab = torch.load(f)
+        model, optimizer, vocab, loss, acc = torch.load(f)
 
-    return model, optimizer, vocab
+    return model, optimizer, vocab, loss, acc
