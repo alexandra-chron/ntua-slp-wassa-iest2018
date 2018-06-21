@@ -21,7 +21,7 @@ from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
 from utils.training import class_weigths, save_checkpoint, load_checkpoint, epoch_summary
 
-pretrained_classifier = False
+pretrained_classifier = True
 
 # load embeddings
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
@@ -68,7 +68,7 @@ if pretrained_classifier:
     model = pretr_model
     name = "wassa_pretr_clf"
 else:
-    name = "wassa"
+    name = "wassa_rnn_400"
 #############################################################################
 # Training Pipeline
 #############################################################################
@@ -78,17 +78,24 @@ def acc(y, y_hat):
     return accuracy_score(y, y_hat)
 
 
-def f1(y, y_hat):
+def f1_macro(y, y_hat):
     return f1_score(y, y_hat, average='macro')
+
+
+def f1_micro(y, y_hat):
+    return f1_score(y, y_hat, average='micro')
 
 
 #############################################################
 # Experiment
 #############################################################
 experiment = Experiment(config["name"], hparams=config)
+experiment.add_metric(Metric(name="f1_macro_" + name, tags=["train", "val"],
+                             vis_type="line"))
 experiment.add_metric(Metric(name="loss_" + name, tags=["train", "val"],
                              vis_type="line"))
-
+experiment.add_metric(Metric(name="acc_" + name, tags=["train", "val"],
+                             vis_type="line"))
 best_loss = None
 now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
 
@@ -97,20 +104,36 @@ for epoch in range(1, config["epochs"] + 1):
     train_clf(epoch, model, train_loader, criterion, optimizer, DEVICE)
     print()
     # evaluate the performance of the model, on both data sets
+
     avg_train_loss, y, y_pred = eval_clf(model, train_loader, criterion,
                                          DEVICE)
-    print("\tTrain: loss={:.4f}, acc={:.4f}, f1={:.4f}".format(avg_train_loss,
-                                                               acc(y, y_pred),
-                                                               f1(y, y_pred)))
+    print("\tTrain: loss={:.4f}, acc={:.4f}, f1_macro={:.4f}, "
+          "f1_micro={:.4f}".format(avg_train_loss,
+                                    acc(y, y_pred),
+                                    f1_macro(y, y_pred),  f1_micro(y, y_pred)))
+
+    acc_train = acc(y, y_pred)
+    f1_macro_train = f1_macro(y, y_pred)
 
     avg_val_loss, y, y_pred = eval_clf(model, test_loader, criterion,
                                        DEVICE)
-    print("\tTest:  loss={:.4f}, acc={:.4f}, f1={:.4f}".format(avg_val_loss,
-                                                               acc(y, y_pred),
-                                                               f1(y, y_pred)))
+
+    print("\tVal: loss={:.4f}, acc={:.4f}, f1_macro={:.4f}, "
+          "f1_micro={:.4f}".format(avg_val_loss,
+                                    acc(y, y_pred),
+                                    f1_macro(y, y_pred),  f1_micro(y, y_pred)))
+
+    acc_val = acc(y, y_pred)
+    f1_macro_val = f1_macro(y, y_pred)
+
+    experiment.metrics["f1_macro_" + name].append(tag="train", value=f1_macro_train)
+    experiment.metrics["f1_macro_" + name].append(tag="val", value=f1_macro_val)
 
     experiment.metrics["loss_" + name].append(tag="train", value=avg_train_loss)
     experiment.metrics["loss_" + name].append(tag="val", value=avg_val_loss)
+
+    experiment.metrics["acc_" + name].append(tag="train", value=acc_train)
+    experiment.metrics["acc_" + name].append(tag="val", value=acc_val)
 
     epoch_summary("train", avg_train_loss)
     epoch_summary("val", avg_val_loss)
@@ -121,6 +144,7 @@ for epoch in range(1, config["epochs"] + 1):
     # Save the model if the validation loss is the best we've seen so far.
     if not best_loss or avg_val_loss < best_loss:
         print("saving checkpoint...")
-        save_checkpoint("{}_{}".format(name, now), model, optimizer, loss=avg_val_loss, acc=acc(y, y_pred),
+        save_checkpoint("{}_{}".format(name, now), model,
+                        optimizer, loss=avg_val_loss, acc=acc(y, y_pred),
                         timestamp=False)
         best_loss = avg_val_loss

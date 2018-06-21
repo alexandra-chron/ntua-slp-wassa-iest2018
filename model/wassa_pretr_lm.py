@@ -14,13 +14,12 @@ from torch.utils.data import DataLoader
 from config import BASE_PATH, DEVICE
 from model.params import WASSA_WITH_PRETR_LM
 from model.pipelines import train_clf, eval_clf
-from modules.neural.attention import SelfAttention
 from modules.neural.dataloading import WordDataset
 from modules.neural.models import Classifier
 from utils.dataloaders import load_wassa
 from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
-from utils.training import class_weigths, save_checkpoint, load_checkpoint, epoch_summary
+from utils.training import class_weigths, load_checkpoint, epoch_summary, save_checkpoint_pre_lm
 
 pretrained = True
 # len(word2idx) = 804870
@@ -38,7 +37,8 @@ y_train = label_encoder.transform(y_train)
 y_test = label_encoder.transform(y_test)
 
 # Load Pretrained LM
-pretr_model, pretr_optimizer, pretr_vocab = load_checkpoint("twitter100K_18-06-17_18:22:44")
+pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
+    load_checkpoint("twitter700K_18-06-20_23:59:37")
 pretr_model.to(DEVICE)
 
 # Force target task to use pretrained vocab
@@ -87,20 +87,29 @@ def acc(y, y_hat):
     return accuracy_score(y, y_hat)
 
 
-def f1(y, y_hat):
+def f1_macro(y, y_hat):
     return f1_score(y, y_hat, average='macro')
+
+
+def f1_micro(y, y_hat):
+    return f1_score(y, y_hat, average='micro')
 
 
 #############################################################
 # Experiment
 #############################################################
 experiment = Experiment(config["name"], hparams=config)
-experiment.add_metric(Metric(name="loss_pretr_lm", tags=["train", "val"],
+experiment.add_metric(Metric(name="f1_macro_with_pretr_lm", tags=["train", "val"],
                              vis_type="line"))
 
+experiment.add_metric(Metric(name="acc_with_pretr_lm", tags=["train", "val"],
+                             vis_type="line"))
 
+experiment.add_metric(Metric(name="loss_with_pretr_lm", tags=["train", "val"],
+                             vis_type="line"))
 best_loss = None
 now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
+
 
 for epoch in range(1, config["epochs"] + 1):
     # train the model for one epoch
@@ -109,18 +118,30 @@ for epoch in range(1, config["epochs"] + 1):
     # evaluate the performance of the model, on both data sets
     avg_train_loss, y, y_pred = eval_clf(model, train_loader, criterion,
                                          DEVICE)
-    print("\tTrain: loss={:.4f}, acc={:.4f}, f1={:.4f}".format(avg_train_loss,
-                                                               acc(y, y_pred),
-                                                               f1(y, y_pred)))
+    print("\tTrain: loss={:.4f}, acc={:.4f}, f1_macro={:.4f}, "
+          "f1_micro={:.4f}".format(avg_train_loss,
+                                    acc(y, y_pred),
+                                    f1_macro(y, y_pred),  f1_micro(y, y_pred)))
+    acc_train = acc(y, y_pred)
+    f1_macro_train = f1_macro(y, y_pred)
 
     avg_val_loss, y, y_pred = eval_clf(model, test_loader, criterion,
                                        DEVICE)
-    print("\tTest:  loss={:.4f}, acc={:.4f}, f1={:.4f}".format(avg_val_loss,
-                                                               acc(y, y_pred),
-                                                               f1(y, y_pred)))
+    print("\tVal: loss={:.4f}, acc={:.4f}, f1_macro={:.4f}, "
+          "f1_micro={:.4f}".format(avg_val_loss,
+                                    acc(y, y_pred),
+                                    f1_macro(y, y_pred),  f1_micro(y, y_pred)))
+    acc_val = acc(y, y_pred)
+    f1_macro_val = f1_macro(y, y_pred)
 
-    experiment.metrics["loss_pretr_lm"].append(tag="train", value=avg_train_loss)
-    experiment.metrics["loss_pretr_lm"].append(tag="val", value=avg_val_loss)
+    experiment.metrics["f1_macro_with_pretr_lm"].append(tag="train", value=f1_macro_train)
+    experiment.metrics["f1_macro_with_pretr_lm"].append(tag="val", value=f1_macro_val)
+
+    experiment.metrics["loss_with_pretr_lm"].append(tag="train", value=avg_train_loss)
+    experiment.metrics["loss_with_pretr_lm"].append(tag="val", value=avg_val_loss)
+
+    experiment.metrics["acc_with_pretr_lm"].append(tag="train", value=acc_train)
+    experiment.metrics["acc_with_pretr_lm"].append(tag="val", value=acc_val)
 
     epoch_summary("train", avg_train_loss)
     epoch_summary("val", avg_val_loss)
@@ -131,6 +152,9 @@ for epoch in range(1, config["epochs"] + 1):
     # Save the model if the validation loss is the best we've seen so far.
     if not best_loss or avg_val_loss < best_loss:
         print("saving checkpoint...")
-        save_checkpoint("{}_{}".format("wassa_pretr_lm", now), model, optimizer, loss=avg_val_loss, acc=acc(y, y_pred),
-                        timestamp=False)
+
+        save_checkpoint_pre_lm("{}_{}".format("wassa_pretr_lm", now), model,
+                               optimizer, word2idx=word2idx, idx2word=idx2word,
+                               loss=avg_val_loss, acc=acc(y, y_pred),
+                               timestamp=False)
         best_loss = avg_val_loss

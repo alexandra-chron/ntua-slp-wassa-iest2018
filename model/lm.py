@@ -22,7 +22,7 @@ from utils.training import class_weigths, epoch_summary, save_checkpoint
 
 # load dataset
 config = ConfLangModel
-dataset = 'twitter100K'
+dataset = 'twitter700K'
 train_data = sentence_dataset(os.path.join(DATA_DIR, dataset, "train.txt"))
 val_data = sentence_dataset(os.path.join(DATA_DIR, dataset, "valid.txt"))
 
@@ -99,7 +99,8 @@ for epoch in range(config["epochs"]):
     # Save the model if the validation loss is the best we've seen so far.
     if not best_loss or avg_val_loss < best_loss:
         print("saving checkpoint...")
-        save_checkpoint("{}_{}".format(dataset, now), model, optimizer, train_set.vocab,
+        save_checkpoint("{}_{}".format(dataset, now), model, optimizer,
+                        train_set.vocab,
                         loss=avg_val_loss, timestamp=False)
         best_loss = avg_val_loss
 
