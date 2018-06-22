@@ -3,6 +3,9 @@
 This repository contains the source code of the models submitted by NTUA-SLP team in WASSA 2018 
 http://implicitemotions.wassa2018.com/
 
+The results of the competition can be found here:
+https://competitions.codalab.org/competitions/19214#results
+
 **Documentation**
 
 In order to make our codebase more accessible and easier to extend, we provide an overview of the structure of our project. 
