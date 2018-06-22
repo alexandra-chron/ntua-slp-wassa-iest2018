@@ -324,3 +324,52 @@ def load_checkpoint_pre_lm(name, path=None):
         model, optimizer, word2idx, idx2word, loss, acc = torch.load(f)
 
     return model, optimizer, word2idx, idx2word, loss, acc
+
+def save_checkpoint_with_f1(name, model, optimizer, vocab=None, loss=None, acc=None, f1=None, path=None, timestamp=False):
+    """
+    Save a trained model, along with its optimizer, in order to be able to
+    resume training
+    Args:
+        name (str): the name of the model
+        path (str): the directory, in which to save the checkpoints
+        model ():
+        optimizer ():
+        timestamp (bool): whether to keep only one model (latest), or keep every
+            checkpoint
+
+    Returns:
+
+    """
+    now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
+
+    if timestamp:
+        model_fname = "{}_{}.pt".format(name, now)
+    else:
+        model_fname = "{}.pt".format(name)
+
+    if path is None:
+        path = os.path.join(BASE_PATH, "checkpoints")
+
+    # save pytorch model
+    torch.save([model, optimizer, vocab, loss, acc, f1], os.path.join(path, model_fname))
+
+def load_checkpoint_with_f1(name, path=None):
+    """
+    Load a trained model, along with its optimizer
+    Args:
+        name (str): the name of the model
+        path (str): the directory, in which the model is saved
+
+    Returns:
+        model, optimizer
+
+    """
+    if path is None:
+        path = os.path.join(BASE_PATH, "checkpoints")
+
+    model_fname = os.path.join(path, "{}.pt".format(name))
+
+    with open(model_fname, 'rb') as f:
+        model, optimizer, vocab, loss, acc, f1 = torch.load(f)
+
+    return model, optimizer, vocab, loss, acc, f1
