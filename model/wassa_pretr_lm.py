@@ -12,7 +12,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from config import BASE_PATH, DEVICE
-from model.params import WASSA_WITH_PRETR_LM
+from model.params import WASSA_WITH_PRETR_LM, ConfLangModel
 from model.pipelines import train_clf, eval_clf
 from modules.neural.dataloading import WordDataset
 from modules.neural.models import Classifier
@@ -33,6 +33,13 @@ _, _, weights = load_word_vectors(file, 300)
 
 # load dataset
 config = WASSA_WITH_PRETR_LM
+config_lm = ConfLangModel
+
+# Attention size needs to be equal to RNN size for Transfer Learning
+if config['encoder_size'] != config_lm['rnn_size']:
+    config['encoder_size'] = config_lm['rnn_size']
+    print("Classifier RNN size needs to be equal to LM RNN size!")
+
 X_train, X_test, y_train, y_test = load_wassa()
 
 # 3 - convert labels from strings to integers
