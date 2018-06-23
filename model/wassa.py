@@ -20,7 +20,8 @@ from utils.dataloaders import load_wassa
 from utils.early_stopping import Early_stopping
 from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
-from utils.training import class_weigths, save_checkpoint, load_checkpoint, epoch_summary, save_checkpoint_with_f1
+from utils.training import class_weigths, save_checkpoint, load_checkpoint, epoch_summary, save_checkpoint_with_f1, \
+    load_checkpoint_with_f1
 
 pretrained_classifier = True
 
@@ -35,6 +36,7 @@ config_sentiment = SEMEVAL_2017
 if pretrained_classifier:
     if config['encoder_size'] != config_sentiment['encoder_size']:
         config['encoder_size'] = config_sentiment['encoder_size']
+        config['encoder_bidirectional'] = config_sentiment['encoder_bidirectional']
         print("Classifier RNN size needs to be equal to Sentiment RNN size! (TL)")
 
 X_train, X_test, y_train, y_test = load_wassa()
@@ -70,13 +72,15 @@ parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = Adam(parameters, amsgrad=True)
 
 if pretrained_classifier:
-    pretr_model, pretr_optimizer, pretr_vocab, loss, acc = load_checkpoint("sentiment_18-06-21_17:38:47")
+    pretr_model, pretr_optimizer, pretr_vocab, loss, acc, f1 = \
+        load_checkpoint_with_f1("sentiment_18-06-23_19:13:41")
     pretr_model.to(DEVICE)
     pretr_model.output = model.output
     model = pretr_model
     name = "wassa_pretr_clf"
 else:
-    name = "wassa_rnn_400"
+    name = "wassa_simple"
+
 #############################################################################
 # Training Pipeline
 #############################################################################
@@ -105,7 +109,7 @@ experiment.add_metric(Metric(name="loss_" + name, tags=["train", "val"],
 experiment.add_metric(Metric(name="acc_" + name, tags=["train", "val"],
                              vis_type="line"))
 best_loss = None
-early_stopping = Early_stopping("max", config["patience"])
+early_stopping = Early_stopping("min", config["patience"])
 
 now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
 
@@ -139,7 +143,7 @@ for epoch in range(1, config["epochs"] + 1):
     #############################################
     # Early Stopping
     #############################################
-    if early_stopping.stop(f1_macro_val):
+    if early_stopping.stop(avg_val_loss):
         print("Early Stopping....")
         break
     experiment.metrics["f1_macro_" + name].append(tag="train", value=f1_macro_train)
@@ -151,8 +155,8 @@ for epoch in range(1, config["epochs"] + 1):
     experiment.metrics["acc_" + name].append(tag="train", value=acc_train)
     experiment.metrics["acc_" + name].append(tag="val", value=acc_val)
 
-    epoch_summary("train", avg_train_loss)
-    epoch_summary("val", avg_val_loss)
+    # epoch_summary("train", avg_train_loss)
+    # epoch_summary("val", avg_val_loss)
 
     # after updating all the values, refresh the plots
     experiment.update_plots()
