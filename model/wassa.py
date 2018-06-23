@@ -141,7 +141,7 @@ for epoch in range(1, config["epochs"] + 1):
     #############################################
     if early_stopping.stop(f1_macro_val):
         print("Early Stopping....")
-
+        break
     experiment.metrics["f1_macro_" + name].append(tag="train", value=f1_macro_train)
     experiment.metrics["f1_macro_" + name].append(tag="val", value=f1_macro_val)
 

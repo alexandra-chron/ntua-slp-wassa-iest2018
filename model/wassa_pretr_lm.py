@@ -17,17 +17,16 @@ from model.pipelines import train_clf, eval_clf
 from modules.neural.dataloading import WordDataset
 from modules.neural.models import Classifier
 from utils.dataloaders import load_wassa
+from utils.early_stopping import Early_stopping
 from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
-from utils.training import class_weigths, load_checkpoint, epoch_summary, save_checkpoint_pre_lm
+from utils.training import class_weigths, load_checkpoint, epoch_summary, save_checkpoint_pre_lm, load_checkpoint_pre_lm
 
 ################################################################################
 # Loading models to see accuract & loss
 ################################################################################
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = load_checkpoint("wassa_pretr_clf_18-06-20_01:09:06")
 
-################################################################################
-pretrained = True
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
 _, _, weights = load_word_vectors(file, 300)
 
@@ -53,7 +52,7 @@ pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
     load_checkpoint("twitter700K_18-06-20_23:59:37")
 pretr_model.to(DEVICE)
 
-# Force target task to use pretrained vocab
+# # Force target task to use pretrained vocab
 word2idx = pretr_vocab.tok2id
 idx2word = pretr_vocab.id2tok
 ntokens = pretr_vocab.size
@@ -120,8 +119,9 @@ experiment.add_metric(Metric(name="acc_with_pretr_lm", tags=["train", "val"],
 experiment.add_metric(Metric(name="loss_with_pretr_lm", tags=["train", "val"],
                              vis_type="line"))
 best_loss = None
-now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
+early_stopping = Early_stopping("max", config["patience"])
 
+now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
 
 for epoch in range(1, config["epochs"] + 1):
     # train the model for one epoch
@@ -145,6 +145,13 @@ for epoch in range(1, config["epochs"] + 1):
                                     f1_macro(y, y_pred),  f1_micro(y, y_pred)))
     acc_val = acc(y, y_pred)
     f1_macro_val = f1_macro(y, y_pred)
+
+    #############################################
+    # Early Stopping
+    #############################################
+    if early_stopping.stop(f1_macro_val):
+        print("Early Stopping....")
+        break
 
     experiment.metrics["f1_macro_with_pretr_lm"].append(tag="train", value=f1_macro_train)
     experiment.metrics["f1_macro_with_pretr_lm"].append(tag="val", value=f1_macro_val)

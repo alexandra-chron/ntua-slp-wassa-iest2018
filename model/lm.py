@@ -16,6 +16,7 @@ from model.pipelines import train_clf, eval_clf, train_sent_lm, eval_sent_lm
 from modules.neural.dataloading import WordDataset, LangModelDataset
 from modules.neural.models import Classifier, LangModel
 from utils.dataloaders import load_wassa, sentence_dataset
+from utils.early_stopping import Early_stopping
 from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
 from utils.training import class_weigths, epoch_summary, save_checkpoint
@@ -64,6 +65,7 @@ experiment.add_metric(Metric(name="loss_lm", tags=["train", "val"],
                              vis_type="line"))
 experiment.add_metric(Metric(name="ppl_lm", tags=["train", "val"],
                              vis_type="line"))
+early_stopping = Early_stopping("min", config["patience"]) # metric = val_loss
 
 best_loss = None
 
@@ -79,11 +81,15 @@ for epoch in range(config["epochs"]):
     avg_val_loss = eval_sent_lm(model, val_loader, ntokens, loss_function,
                                 DEVICE)
 
-    ############################################################
-    # epoch summary
-    ############################################################
     lr = scheduler.optimizer.param_groups[0]['lr']
     print("\tLR:{}".format(lr))
+
+    #############################################
+    # Early Stopping
+    #############################################
+    if early_stopping.stop(avg_val_loss):
+        print("Early Stopping....")
+        break
 
     experiment.metrics["loss_lm"].append(tag="train", value=avg_loss)
     experiment.metrics["ppl_lm"].append(tag="train", value=math.exp(avg_loss))
@@ -91,6 +97,9 @@ for epoch in range(config["epochs"]):
     experiment.metrics["loss_lm"].append(tag="val", value=avg_val_loss)
     experiment.metrics["ppl_lm"].append(tag="val", value=math.exp(avg_val_loss))
 
+    ############################################################
+    # epoch summary
+    ############################################################
     epoch_summary("train", avg_loss)
     epoch_summary("val", avg_val_loss)
 
