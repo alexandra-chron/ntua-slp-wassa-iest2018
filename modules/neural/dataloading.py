@@ -201,6 +201,8 @@ class WordDataset(BaseDataset):
         else:
             self.max_length = max_length
 
+        self.dataset_statistics()
+
     def prepare(self, data):
         desc = "PreProcessing dataset {}...".format(self.name)
         data = [self.preprocess(x) for x in tqdm(data, desc=desc)]

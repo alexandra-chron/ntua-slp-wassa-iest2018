@@ -21,8 +21,13 @@ from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
 from utils.training import class_weigths, load_checkpoint, epoch_summary, save_checkpoint_pre_lm
 
+################################################################################
+# Loading models to see accuract & loss
+################################################################################
+pretr_model, pretr_optimizer, pretr_vocab, loss, acc = load_checkpoint("wassa_pretr_clf_18-06-20_01:09:06")
+
+################################################################################
 pretrained = True
-# len(word2idx) = 804870
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
 _, _, weights = load_word_vectors(file, 300)
 

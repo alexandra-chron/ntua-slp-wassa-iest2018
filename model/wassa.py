@@ -12,14 +12,15 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from config import BASE_PATH, DEVICE
-from model.params import WASSA_CONF, WASSA_BASELINE
+from model.params import WASSA_CONF, WASSA_BASELINE, SEMEVAL_2017
 from model.pipelines import train_clf, eval_clf
 from modules.neural.dataloading import WordDataset
 from modules.neural.models import Classifier
 from utils.dataloaders import load_wassa
+from utils.early_stopping import Early_stopping
 from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
-from utils.training import class_weigths, save_checkpoint, load_checkpoint, epoch_summary
+from utils.training import class_weigths, save_checkpoint, load_checkpoint, epoch_summary, save_checkpoint_with_f1
 
 pretrained_classifier = True
 
@@ -29,6 +30,13 @@ word2idx, idx2word, weights = load_word_vectors(file, 300)
 
 # load dataset
 config = WASSA_CONF
+config_sentiment = SEMEVAL_2017
+
+if pretrained_classifier:
+    if config['encoder_size'] != config_sentiment['encoder_size']:
+        config['encoder_size'] = config_sentiment['encoder_size']
+        print("Classifier RNN size needs to be equal to Sentiment RNN size! (TL)")
+
 X_train, X_test, y_train, y_test = load_wassa()
 
 # 3 - convert labels from strings to integers
@@ -62,7 +70,7 @@ parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = Adam(parameters, amsgrad=True)
 
 if pretrained_classifier:
-    pretr_model, pretr_optimizer, pretr_vocab = load_checkpoint("sentiment_18-06-17_21:11:42")
+    pretr_model, pretr_optimizer, pretr_vocab, loss, acc = load_checkpoint("sentiment_18-06-21_17:38:47")
     pretr_model.to(DEVICE)
     pretr_model.output = model.output
     model = pretr_model
@@ -97,6 +105,8 @@ experiment.add_metric(Metric(name="loss_" + name, tags=["train", "val"],
 experiment.add_metric(Metric(name="acc_" + name, tags=["train", "val"],
                              vis_type="line"))
 best_loss = None
+early_stopping = Early_stopping("max", config["patience"])
+
 now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
 
 for epoch in range(1, config["epochs"] + 1):
@@ -126,6 +136,12 @@ for epoch in range(1, config["epochs"] + 1):
     acc_val = acc(y, y_pred)
     f1_macro_val = f1_macro(y, y_pred)
 
+    #############################################
+    # Early Stopping
+    #############################################
+    if early_stopping.stop(f1_macro_val):
+        print("Early Stopping....")
+
     experiment.metrics["f1_macro_" + name].append(tag="train", value=f1_macro_train)
     experiment.metrics["f1_macro_" + name].append(tag="val", value=f1_macro_val)
 
@@ -144,7 +160,7 @@ for epoch in range(1, config["epochs"] + 1):
     # Save the model if the validation loss is the best we've seen so far.
     if not best_loss or avg_val_loss < best_loss:
         print("saving checkpoint...")
-        save_checkpoint("{}_{}".format(name, now), model,
-                        optimizer, loss=avg_val_loss, acc=acc(y, y_pred),
+        save_checkpoint_with_f1("{}_{}".format(name, now), model,
+                        optimizer, loss=avg_val_loss, acc=acc_val, f1=f1_macro_val,
                         timestamp=False)
         best_loss = avg_val_loss
