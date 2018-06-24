@@ -23,9 +23,13 @@ from utils.nlp import twitter_preprocessor
 from utils.training import class_weigths, load_checkpoint, epoch_summary, save_checkpoint_pre_lm, load_checkpoint_pre_lm
 
 ################################################################################
-# Loading models to see accuract & loss
-################################################################################
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = load_checkpoint("wassa_pretr_clf_18-06-20_01:09:06")
+
+finetune = "all"
+# finetune = {None, embed, all}
+
+unfreeze = 10
+# at which epoch the fine-tuning starts
 
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
 _, _, weights = load_word_vectors(file, 300)
@@ -75,14 +79,22 @@ classes = label_encoder.classes_.size
 # Define model, without pretrained embeddings
 model = Classifier(embeddings=weights, out_size=classes, **config).to(DEVICE)
 
-# Transfer Learning, force target task to inherit parent task weights
-# except for linear layer (pretrained was LM, target is 6 classes classifier)
-
-
+#############################################################################
+# Transfer Learning (target takes source weights,except for linear layer)
+#############################################################################
 model.embedding = pretr_model.embedding
 model.encoder = pretr_model.encoder
-print(model)
 
+#############################################################################
+# Fine tune either: No layer, only embedding layer, all layers
+#############################################################################
+if finetune is None:
+    for param in model.parameters():
+        param.requires_grad = False
+elif finetune == "embed":
+    model.embedding.requires_grad = False
+
+print(model)
 
 weights = class_weigths(train_set.labels, to_pytorch=True)
 weights = weights.to(DEVICE)
@@ -104,6 +116,16 @@ def f1_macro(y, y_hat):
 
 def f1_micro(y, y_hat):
     return f1_score(y, y_hat, average='micro')
+
+
+def unfreeze_module(module, optimizer):
+    for _param in module.parameters():
+        _param.requires_grad = True
+
+    optimizer.add_param_group(
+        {'params': list(
+            module.parameters())}
+    )
 
 
 #############################################################
@@ -146,9 +168,18 @@ for epoch in range(1, config["epochs"] + 1):
     acc_val = acc(y, y_pred)
     f1_macro_val = f1_macro(y, y_pred)
 
-    #############################################
+    ###############################################################
+    # Unfreezing the model after X epochs
+    ###############################################################
+    if unfreeze > 0:
+        if epoch == unfreeze:
+            print("Unfreeze transfer-learning model...")
+            unfreeze_module(model.encoder, optimizer)
+            unfreeze_module(model.attention, optimizer)
+
+    ###############################################################
     # Early Stopping
-    #############################################
+    ###############################################################
     if early_stopping.stop(f1_macro_val):
         print("Early Stopping....")
         break

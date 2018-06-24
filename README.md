@@ -21,3 +21,9 @@ In order to make our codebase more accessible and easier to extend, we provide a
 `submissions`: contains the script to test trained model and create submission file for Wassa
 
 `utils`: contains helper functions
+
+**Bibliography**
+
+https://arxiv.org/abs/1801.06146
+http://arxiv.org/abs/1708.02182
+http://arxiv.org/abs/1708.00524
