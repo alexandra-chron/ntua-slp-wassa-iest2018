@@ -23,6 +23,7 @@ In order to make our codebase more accessible and easier to extend, we provide a
 `utils`: contains helper functions
 
 **Bibliography**
+
 Some papers on which this repo is based:
 
 https://arxiv.org/abs/1801.06146
