@@ -25,10 +25,11 @@ from utils.training import class_weigths, load_checkpoint, epoch_summary, save_c
 ################################################################################
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = load_checkpoint("wassa_pretr_clf_18-06-20_01:09:06")
 
-finetune = "all"
+finetune = None
 # finetune = {None, embed, all}
 
-unfreeze = 10
+name = "bidir_with_pretr_lm_ft"
+unfreeze = 0
 # at which epoch the fine-tuning starts
 
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
@@ -118,11 +119,12 @@ def f1_micro(y, y_hat):
     return f1_score(y, y_hat, average='micro')
 
 
-def unfreeze_module(module, optimizer):
+def unfreeze_module(module, _optimizer):
     for _param in module.parameters():
         _param.requires_grad = True
+        module.requires_grad = True
 
-    optimizer.add_param_group(
+    _optimizer.add_param_group(
         {'params': list(
             module.parameters())}
     )
@@ -132,13 +134,13 @@ def unfreeze_module(module, optimizer):
 # Experiment
 #############################################################
 experiment = Experiment(config["name"], hparams=config)
-experiment.add_metric(Metric(name="f1_macro_with_pretr_lm", tags=["train", "val"],
+experiment.add_metric(Metric(name="f1_macro_with_pretr_lm_" + name, tags=["train", "val"],
                              vis_type="line"))
 
-experiment.add_metric(Metric(name="acc_with_pretr_lm", tags=["train", "val"],
+experiment.add_metric(Metric(name="acc_with_pretr_lm_" + name, tags=["train", "val"],
                              vis_type="line"))
 
-experiment.add_metric(Metric(name="loss_with_pretr_lm", tags=["train", "val"],
+experiment.add_metric(Metric(name="loss_with_pretr_lm_" + name, tags=["train", "val"],
                              vis_type="line"))
 best_loss = None
 early_stopping = Early_stopping("max", config["patience"])
@@ -174,8 +176,9 @@ for epoch in range(1, config["epochs"] + 1):
     if unfreeze > 0:
         if epoch == unfreeze:
             print("Unfreeze transfer-learning model...")
-            unfreeze_module(model.encoder, optimizer)
-            unfreeze_module(model.attention, optimizer)
+            unfreeze_module(model.embedding, optimizer)
+            # unfreeze_module(model.encoder, optimizer)
+            # unfreeze_module(model.attention, optimizer)
 
     ###############################################################
     # Early Stopping
@@ -184,14 +187,14 @@ for epoch in range(1, config["epochs"] + 1):
         print("Early Stopping....")
         break
 
-    experiment.metrics["f1_macro_with_pretr_lm"].append(tag="train", value=f1_macro_train)
-    experiment.metrics["f1_macro_with_pretr_lm"].append(tag="val", value=f1_macro_val)
+    experiment.metrics["f1_macro_with_pretr_lm_" + name].append(tag="train", value=f1_macro_train)
+    experiment.metrics["f1_macro_with_pretr_lm_" + name].append(tag="val", value=f1_macro_val)
 
-    experiment.metrics["loss_with_pretr_lm"].append(tag="train", value=avg_train_loss)
-    experiment.metrics["loss_with_pretr_lm"].append(tag="val", value=avg_val_loss)
+    experiment.metrics["loss_with_pretr_lm_" + name].append(tag="train", value=avg_train_loss)
+    experiment.metrics["loss_with_pretr_lm_" + name].append(tag="val", value=avg_val_loss)
 
-    experiment.metrics["acc_with_pretr_lm"].append(tag="train", value=acc_train)
-    experiment.metrics["acc_with_pretr_lm"].append(tag="val", value=acc_val)
+    experiment.metrics["acc_with_pretr_lm_" + name].append(tag="train", value=acc_train)
+    experiment.metrics["acc_with_pretr_lm_" + name].append(tag="val", value=acc_val)
 
     epoch_summary("train", avg_train_loss)
     epoch_summary("val", avg_val_loss)

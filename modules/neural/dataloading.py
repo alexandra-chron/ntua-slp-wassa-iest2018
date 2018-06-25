@@ -2,6 +2,7 @@ import os
 import pickle
 from collections import Counter
 
+import nltk
 import numpy
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -68,6 +69,7 @@ class Vocab(object):
         self.SOS = "<sos>"
         self.EOS = "<eos>"
         self.UNK = "<unk>"
+        self.TRG = "[#triggerword#]"
 
         self.vocab = Counter()
 
@@ -94,6 +96,7 @@ class Vocab(object):
         self.__add_token(self.SOS)
         self.__add_token(self.EOS)
         self.__add_token(self.UNK)
+        self.__add_token(self.TRG)
 
         for w, k in self.vocab.most_common(size):
             self.__add_token(w)
@@ -263,7 +266,7 @@ class LangModelDataset(BaseDataset):
         if preprocess is not None:
             self.preprocess = preprocess
         else:
-            self.preprocess = lambda x: [_x.lower().split() for _x in x]
+            self.preprocess = self.tokenize
 
         # step 1 - tokenize the dataset
         self.data, self.vocab = self.prepared_data(data)
@@ -280,6 +283,9 @@ class LangModelDataset(BaseDataset):
             self.max_length = max([len(x) for x in self.data])
         else:
             self.max_length = max_length
+
+    def tokenize(self, text):
+        return text.lower().split()
 
     def prepare(self, data):
         _data = []
