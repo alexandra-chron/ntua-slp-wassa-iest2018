@@ -51,8 +51,21 @@ class Classifier(nn.Module):
                                 out_features=out_size)
 
     def forward(self, x, lengths):
+
+        # index of word before target word
+        for i, j in enumerate(x):
+            if 4 not in j:
+                print(i, j)
+
+        idxs = [list(x[i].cpu()).index(4) for i in range(0, len(x))]
         embeddings = self.embedding(x)
         outputs, last_output = self.encoder(embeddings, lengths)
+
+        # hiddens for concat
+        hiddens = [outputs[i][idxs[i]].cpu() for i in range(0, len(idxs))]
+
+        # concat outputs[ind] me representations
+
         representations, attentions = self.attention(outputs, lengths)
 
         logits = self.output(representations)

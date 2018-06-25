@@ -191,7 +191,7 @@ class WordDataset(BaseDataset):
         if preprocess is not None:
             self.preprocess = preprocess
         else:
-            self.preprocess = lambda x: [_x.lower().split() for _x in x]
+            self.preprocess = self.tokenize
 
         # load prepared data. Utilize the `prepared_data()` method
         # from the parent BaseDataset class, which wraps around

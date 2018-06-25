@@ -25,10 +25,10 @@ from utils.training import class_weigths, load_checkpoint, epoch_summary, save_c
 ################################################################################
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = load_checkpoint("wassa_pretr_clf_18-06-20_01:09:06")
 
-finetune = None
+# finetune = None
 # finetune = {None, embed, all}
 
-name = "bidir_with_pretr_lm_ft"
+name = "wassa_simple_split"
 unfreeze = 0
 # at which epoch the fine-tuning starts
 
@@ -54,7 +54,7 @@ y_test = label_encoder.transform(y_test)
 
 # Load Pretrained LM
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
-    load_checkpoint("twitter700K_18-06-20_23:59:37")
+    load_checkpoint("twitter700K_tieweights_18-06-22_14:13:16")
 pretr_model.to(DEVICE)
 
 # # Force target task to use pretrained vocab
@@ -62,14 +62,19 @@ word2idx = pretr_vocab.tok2id
 idx2word = pretr_vocab.id2tok
 ntokens = pretr_vocab.size
 
+# delete the next 3 rows when experiment is ready!
+word2idx['[#triggerword#]'] = 4
+idx2word[4] = '[#triggerword#]'
+
 #####################################################################
 # Define Dataloaders
 #####################################################################
 
-preprocessor = twitter_preprocessor()
-train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train_pretr_lm",
+# preprocessor = twitter_preprocessor()
+preprocessor = None
+train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train_" + name,
                         preprocess=preprocessor)
-test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test_pretr_lm",
+test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test_" + name,
                        preprocess=preprocessor)
 train_loader = DataLoader(train_set, config["batch_train"], shuffle=True,
                           drop_last=True)
@@ -89,11 +94,11 @@ model.encoder = pretr_model.encoder
 #############################################################################
 # Fine tune either: No layer, only embedding layer, all layers
 #############################################################################
-if finetune is None:
-    for param in model.parameters():
-        param.requires_grad = False
-elif finetune == "embed":
-    model.embedding.requires_grad = False
+# if finetune is not None:
+#     for param in model.parameters():
+#         param.requires_grad = False
+# elif finetune == "embed":
+#     model.embedding.requires_grad = False
 
 print(model)
 

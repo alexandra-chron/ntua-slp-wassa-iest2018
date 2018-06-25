@@ -1,6 +1,7 @@
 import glob
 import html
 import os
+import re
 
 from sklearn.model_selection import train_test_split
 
@@ -42,6 +43,9 @@ def clean_text(text):
     text = text.replace('\\""', '"')
 
     text = html.unescape(text)
+    text = re.sub("un\[#TRIGGERWORD#\]", 'un [#TRIGGERWORD#]', text)
+    text = re.sub("Un\[#TRIGGERWORD#\]", 'un [#TRIGGERWORD#]', text)
+    text = re.sub("[^\s]+\[#TRIGGERWORD#\]", ' [#TRIGGERWORD#]', text)
     text = ' '.join(text.split())
     return text
 
