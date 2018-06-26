@@ -253,7 +253,8 @@ def save_checkpoint(name, model, optimizer, vocab=None, loss=None, acc=None, pat
     torch.save([model, optimizer, vocab, loss, acc], os.path.join(path, model_fname))
 
 
-def save_checkpoint_pre_lm(name, model, optimizer, word2idx, idx2word, loss=None, acc=None, path=None, timestamp=False):
+def save_checkpoint_pre_lm(name, model, optimizer, word2idx, idx2word, loss=None, acc=None, f1=None,
+                           path=None, timestamp=False):
     """
     Save a trained model, along with its optimizer, in order to be able to
     resume training
@@ -279,7 +280,7 @@ def save_checkpoint_pre_lm(name, model, optimizer, word2idx, idx2word, loss=None
         path = os.path.join(BASE_PATH, "checkpoints")
 
     # save pytorch model
-    torch.save([model, optimizer, word2idx, idx2word, loss, acc], os.path.join(path, model_fname))
+    torch.save([model, optimizer, word2idx, idx2word, loss, acc, f1], os.path.join(path, model_fname))
 
 
 def load_checkpoint(name, path=None):
