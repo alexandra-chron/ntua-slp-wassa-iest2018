@@ -55,9 +55,11 @@ y_test = label_encoder.transform(y_test)
 preprocessor = twitter_preprocessor()
 # preprocessor = None
 
-train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train",
+train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train_35",
+                        max_length=35,
                         preprocess=preprocessor)
-test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test",
+test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test_35",
+                       max_length=35,
                        preprocess=preprocessor)
 train_loader = DataLoader(train_set, config["batch_train"], shuffle=True,
                           drop_last=True)
