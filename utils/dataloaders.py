@@ -43,8 +43,8 @@ def clean_text(text):
     text = text.replace('\\""', '"')
 
     text = html.unescape(text)
-    text = re.sub("un\[#TRIGGERWORD#\]", 'un [#TRIGGERWORD#]', text)
-    text = re.sub("Un\[#TRIGGERWORD#\]", 'un [#TRIGGERWORD#]', text)
+    text = re.sub("un\[#TRIGGERWORD#\]", 'not [#TRIGGERWORD#]', text)
+    text = re.sub("Un\[#TRIGGERWORD#\]", 'not [#TRIGGERWORD#]', text)
     text = re.sub("[^\s]+\[#TRIGGERWORD#\]", ' [#TRIGGERWORD#]', text)
     text = ' '.join(text.split())
     return text
