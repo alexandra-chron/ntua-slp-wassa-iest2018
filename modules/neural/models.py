@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 import torch.nn.functional as F
 from modules.neural.attention import SelfAttention
@@ -47,28 +48,37 @@ class Classifier(nn.Module):
                                        dropout=attention_dropout,
                                        batch_first=True)
 
-        self.output = nn.Linear(in_features=self.encoder.feature_size,
+        self.output = nn.Linear(in_features=self.encoder.feature_size*2,
                                 out_features=out_size)
 
     def forward(self, x, lengths):
+        # SOS SOS SOS SOS
+        # PREPEI NA ALLAKSOUME THN FORWARD WSTE OI ALLAGES NA EINAI MONO GIA PRETR LM
+        # OXI GIA SKETO WASSA
 
         # index of word before target word
-        for i, j in enumerate(x):
-            if 4 not in j:
-                print(i, j)
+        # In lm vocab()always idx2word[4]=[#triggerword#]
+        for i, tweet in enumerate(x):
+            if 4 not in tweet:
+                print(i, tweet)
 
-        idxs = [list(x[i].cpu()).index(4) for i in range(0, len(x))]
+        idxs_cpu = [(list(x[i].cpu()).index(4)-1) for i in range(0, len(x))] # very slow
+        idxs = [(x[i]==4).nonzero() for i in range(0, len(x))]
+        # todo: -1 to these idxs to be correct
+
         embeddings = self.embedding(x)
         outputs, last_output = self.encoder(embeddings, lengths)
 
         # hiddens for concat
-        hiddens = [outputs[i][idxs[i]].cpu() for i in range(0, len(idxs))]
+        hiddens = [outputs[i][idxs_cpu[i]] for i in range(0, len(idxs))]
+        hiddens_tensor = torch.stack(hiddens)
 
         # concat outputs[ind] me representations
 
         representations, attentions = self.attention(outputs, lengths)
 
-        logits = self.output(representations)
+        new_representations = torch.cat((representations, hiddens_tensor),1)
+        logits = self.output(new_representations)
 
         return logits, attentions
 
