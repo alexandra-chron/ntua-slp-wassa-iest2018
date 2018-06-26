@@ -1,5 +1,6 @@
 import os
 import pickle
+import re
 from collections import Counter
 
 import nltk
@@ -205,6 +206,9 @@ class WordDataset(BaseDataset):
             self.max_length = max_length
 
         self.dataset_statistics()
+
+    def tokenize(self, text):
+        return text.lower().split()
 
     def prepare(self, data):
         desc = "PreProcessing dataset {}...".format(self.name)

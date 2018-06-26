@@ -53,6 +53,8 @@ y_test = label_encoder.transform(y_test)
 # Define Dataloaders
 #####################################################################
 preprocessor = twitter_preprocessor()
+# preprocessor = None
+
 train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train",
                         preprocess=preprocessor)
 test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test",
@@ -63,23 +65,26 @@ test_loader = DataLoader(test_set, config["batch_eval"])
 
 classes = label_encoder.classes_.size
 model = Classifier(embeddings=weights, out_size=classes, **config).to(DEVICE)
-print(model)
 
 weights = class_weigths(train_set.labels, to_pytorch=True)
 weights = weights.to(DEVICE)
 criterion = CrossEntropyLoss(weight=weights)
-parameters = filter(lambda p: p.requires_grad, model.parameters())
-optimizer = Adam(parameters, amsgrad=True)
 
 if pretrained_classifier:
-    pretr_model, pretr_optimizer, pretr_vocab, loss, acc, f1 = \
-        load_checkpoint_with_f1("sentiment_18-06-23_19:13:41")
+    pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
+        load_checkpoint("sentiment_baseline")
     pretr_model.to(DEVICE)
     pretr_model.output = model.output
     model = pretr_model
-    name = "wassa_pretr_clf"
+
+    name = "wassa_pretr_clf_with_baseline"
 else:
-    name = "wassa_simple"
+    name = "wassa_rnn_600_bidir_batch32_adam_0.05"
+
+parameters = filter(lambda p: p.requires_grad, model.parameters())
+optimizer = Adam(parameters, amsgrad=True)
+
+print(model)
 
 #############################################################################
 # Training Pipeline
