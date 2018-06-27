@@ -48,19 +48,28 @@ with open("../submissions/label_encoder.pkl", "wb") as r:
     pickle.dump(label_encoder, r)
 y_train = label_encoder.transform(y_train)
 y_test = label_encoder.transform(y_test)
-
+name = "wassa"
 #####################################################################
 # Define Dataloaders
 #####################################################################
+
 preprocessor = twitter_preprocessor()
 # preprocessor = None
+if preprocessor is None:
+    train_name = "train_simple_split_{}".format(name)
+    val_name = "valid_simple_split_{}".format(name)
+else:
+    train_name = "train_ekphrasis_{}".format(name)
+    val_name = "valid_ekphrasis_{}".format(name)
 
-train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train_35",
+
+train_set = WordDataset(X_train, y_train, word2idx, name=train_name,
                         max_length=35,
                         preprocess=preprocessor)
-test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test_35",
+test_set = WordDataset(X_test, y_test, word2idx, name=val_name,
                        max_length=35,
                        preprocess=preprocessor)
+
 train_loader = DataLoader(train_set, config["batch_train"], shuffle=True,
                           drop_last=True)
 test_loader = DataLoader(test_set, config["batch_eval"])

@@ -23,22 +23,32 @@ from utils.training import class_weigths, epoch_summary, save_checkpoint
 
 # load dataset
 config = ConfLangModel
-dataset = 'twitter30M'
-name = 'twitter30M'
+dataset = 'emotion_data'
+name = 'emotion_data'
 train_data = sentence_dataset(os.path.join(DATA_DIR, dataset, "train.txt"))
 val_data = sentence_dataset(os.path.join(DATA_DIR, dataset, "valid.txt"))
-
+# train_data = train_data[:1000]
+# val_data = val_data[:100]
 #####################################################################
 # Define Dataloaders
 #####################################################################
+
 preprocessor = twitter_preprocessor()
 # preprocessor = None
-train_set = LangModelDataset(train_data, name="{}_lm_train_".format(dataset),
+if preprocessor is None:
+    train_name = "train_simple_split_{}".format(dataset)
+    val_name = "valid_simple_split_{}".format(dataset)
+else:
+    train_name = "train_ekphrasis_{}".format(dataset)
+    val_name = "valid_ekphrasis_{}".format(dataset)
+
+train_set = LangModelDataset(train_data, name=train_name,
                              max_length=config["max_length"],
                              vocab_size=50000, preprocess=preprocessor)
-val_set = LangModelDataset(val_data, name="{}_lm_valid_".format(dataset),
+val_set = LangModelDataset(val_data, name=val_name,
                            max_length=train_set.max_length,
                            vocab=train_set.vocab, preprocess=preprocessor)
+
 train_loader = DataLoader(train_set, config["batch_train"], shuffle=True,
                           drop_last=True)
 val_loader = DataLoader(val_set, config["batch_eval"])

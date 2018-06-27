@@ -30,7 +30,7 @@ from utils.training import class_weigths, load_checkpoint, epoch_summary, save_c
 # finetune = None
 # finetune = {None, embed, all}
 
-name = "wassa_emotion_lm_concat"
+name = "wassa_emotion_lm_conc_28ep"
 unfreeze = 0
 # at which epoch the fine-tuning starts
 
@@ -76,10 +76,18 @@ idx2word[4] = '<triggerword>'
 
 preprocessor = twitter_preprocessor()
 # preprocessor = None
-train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train_" + name,
+if preprocessor is None:
+    train_name = "train_simple_split_{}".format(name)
+    val_name = "valid_simple_split_{}".format(name)
+else:
+    train_name = "train_ekphrasis_{}".format(name)
+    val_name = "valid_ekphrasis_{}".format(name)
+
+train_set = WordDataset(X_train, y_train, word2idx, name=train_name,
                         preprocess=preprocessor)
-test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test_" + name,
+test_set = WordDataset(X_test, y_test, word2idx, name=val_name,
                        preprocess=preprocessor)
+
 train_loader = DataLoader(train_set, config["batch_train"], shuffle=True,
                           drop_last=True)
 test_loader = DataLoader(test_set, config["batch_eval"])
