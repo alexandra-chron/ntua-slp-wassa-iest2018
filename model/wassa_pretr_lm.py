@@ -217,6 +217,6 @@ for epoch in range(1, config["epochs"] + 1):
 
         save_checkpoint_pre_lm("{}_{}".format("wassa_pretr_lm", now), model,
                                optimizer, word2idx=word2idx, idx2word=idx2word,
-                               loss=avg_val_loss, acc=acc(y, y_pred),
+                               loss=avg_val_loss, acc=acc(y, y_pred), f1=f1_macro_val,
                                timestamp=False)
         best_loss = avg_val_loss
