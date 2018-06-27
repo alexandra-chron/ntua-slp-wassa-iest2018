@@ -1,8 +1,15 @@
 import numpy
-from ekphrasis.classes.preprocessor import TextPreProcessor
-from ekphrasis.classes.tokenizer import SocialTokenizer
+# from ekphrasis.classes.preprocessor import TextPreProcessor
+# from ekphrasis.classes.tokenizer import SocialTokenizer
+# from ekphrasis.dicts.emoticons import emoticons
 from ekphrasis.dicts.emoticons import emoticons
+
+from ekphrasis.classes.tokenizer import SocialTokenizer
+
+from ekphrasis.classes.preprocessor import TextPreProcessor
 from tqdm import tqdm
+
+
 
 
 def tokenize(text, lowercase=True):
@@ -13,7 +20,7 @@ def tokenize(text, lowercase=True):
 
 def twitter_preprocessor():
     preprocessor = TextPreProcessor(
-        normalize=['url', 'email', 'percent', 'money', 'phone', 'user',
+        normalize=['triggerword', 'url', 'email', 'percent', 'money', 'phone', 'user',
                    'time',
                    'date', 'number'],
         annotate={"hashtag", "elongated", "allcaps", "repeated", 'emphasis',
