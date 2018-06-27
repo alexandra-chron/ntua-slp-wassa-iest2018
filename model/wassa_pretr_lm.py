@@ -20,15 +20,17 @@ from utils.dataloaders import load_wassa
 from utils.early_stopping import Early_stopping
 from utils.load_embeddings import load_word_vectors
 from utils.nlp import twitter_preprocessor
-from utils.training import class_weigths, load_checkpoint, epoch_summary, save_checkpoint_pre_lm, load_checkpoint_pre_lm
+from utils.training import class_weigths, load_checkpoint, epoch_summary, save_checkpoint_pre_lm, \
+    load_checkpoint_pre_lm, load_checkpoint_with_f1
 
 ################################################################################
-pretr_model, pretr_optimizer, pretr_vocab, loss, acc = load_checkpoint("wassa_pretr_clf_18-06-20_01:09:06")
+# pretr_model, pretr_optimizer, pretr_vocab, loss, acc, f1 = \
+#     load_checkpoint_with_f1("wassa_baseline!_18-06-25_15:00:10")
 
 # finetune = None
 # finetune = {None, embed, all}
 
-name = "wassa_simple_split"
+name = "wassa_emotion_lm_concat"
 unfreeze = 0
 # at which epoch the fine-tuning starts
 
@@ -54,7 +56,7 @@ y_test = label_encoder.transform(y_test)
 
 # Load Pretrained LM
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
-    load_checkpoint("twitter700K_tieweights_18-06-22_14:13:16")
+    load_checkpoint("emotion_data_18-06-26_18:01:24")
 pretr_model.to(DEVICE)
 
 # # Force target task to use pretrained vocab
@@ -62,16 +64,18 @@ word2idx = pretr_vocab.tok2id
 idx2word = pretr_vocab.id2tok
 ntokens = pretr_vocab.size
 
-# delete the next 3 rows when experiment is ready!
-word2idx['[#triggerword#]'] = 4
-idx2word[4] = '[#triggerword#]'
+# Bug: need to rename fu!#%ing triggerword
+# because in the vocab built in pretrained LM we didn't name it correctly
+
+word2idx['<triggerword>'] = word2idx.pop('[#triggerword#]')
+idx2word[4] = '<triggerword>'
 
 #####################################################################
 # Define Dataloaders
 #####################################################################
 
-# preprocessor = twitter_preprocessor()
-preprocessor = None
+preprocessor = twitter_preprocessor()
+# preprocessor = None
 train_set = WordDataset(X_train, y_train, word2idx, name="wassa_train_" + name,
                         preprocess=preprocessor)
 test_set = WordDataset(X_test, y_test, word2idx, name="wassa_test_" + name,
