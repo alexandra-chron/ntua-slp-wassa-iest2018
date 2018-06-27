@@ -87,7 +87,7 @@ test_loader = DataLoader(test_set, config["batch_eval"])
 classes = label_encoder.classes_.size
 
 # Define model, without pretrained embeddings
-model = Classifier(embeddings=weights, out_size=classes, **config).to(DEVICE)
+model = Classifier(embeddings=weights, out_size=classes, concat_repr=True, **config).to(DEVICE)
 
 #############################################################################
 # Transfer Learning (target takes source weights,except for linear layer)

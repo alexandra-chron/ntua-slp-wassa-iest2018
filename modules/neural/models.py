@@ -6,7 +6,7 @@ from modules.neural.modules import Embed, RNNEncoder
 
 
 class Classifier(nn.Module):
-    def __init__(self, embeddings=None, out_size=1, **kwargs):
+    def __init__(self, embeddings=None, out_size=1, concat_repr=False, **kwargs):
         """
         Define the layer of the model and perform the initializations
         of the layers (wherever it is necessary)
@@ -26,7 +26,7 @@ class Classifier(nn.Module):
         attention_layers = kwargs.get("attention_layers", 1)
         attention_dropout = kwargs.get("attention_dropout", 0.)
         self.attention_context = kwargs.get("attention_context", False)
-
+        self.concat_repr = concat_repr
         ########################################################
 
         self.embedding = Embed(
@@ -52,33 +52,31 @@ class Classifier(nn.Module):
                                 out_features=out_size)
 
     def forward(self, x, lengths):
-        # SOS SOS SOS SOS
-        # PREPEI NA ALLAKSOUME THN FORWARD WSTE OI ALLAGES NA EINAI MONO GIA PRETR LM
-        # OXI GIA SKETO WASSA
-
         # index of word before target word
         # In lm vocab()always idx2word[4]=[#triggerword#]
-        for i, tweet in enumerate(x):
-            if 4 not in tweet:
-                print(i, tweet)
-
-        idxs_cpu = [(list(x[i].cpu()).index(4)-1) for i in range(0, len(x))] # very slow
-        idxs = [(x[i]==4).nonzero() for i in range(0, len(x))]
-        # todo: -1 to these idxs to be correct
 
         embeddings = self.embedding(x)
         outputs, last_output = self.encoder(embeddings, lengths)
-
-        # hiddens for concat
-        hiddens = [outputs[i][idxs_cpu[i]] for i in range(0, len(idxs))]
-        hiddens_tensor = torch.stack(hiddens)
-
-        # concat outputs[ind] me representations
-
         representations, attentions = self.attention(outputs, lengths)
 
-        new_representations = torch.cat((representations, hiddens_tensor),1)
-        logits = self.output(new_representations)
+        if self.concat_repr:
+            for i, tweet in enumerate(x):
+                if 4 not in tweet:
+                    print(i, tweet)
+
+            idxs_cpu = [(list(x[i].cpu()).index(4)-1) for i in range(0, len(x))]  # very slow
+            idxs = [(x[i] == 4).nonzero() for i in range(0, len(x))]
+            # todo: -1 to these idxs to be correct
+            # hiddens for concat
+            hiddens = [outputs[i][idxs_cpu[i]] for i in range(0, len(idxs))]
+            hiddens_tensor = torch.stack(hiddens)
+
+            # concat outputs[ind] me representations
+            new_representations = torch.cat((representations, hiddens_tensor), 1)
+            logits = self.output(new_representations)
+
+        else:
+            logits = self.output(representations)
 
         return logits, attentions
 
