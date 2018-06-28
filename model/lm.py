@@ -1,8 +1,9 @@
 import datetime
 import math
 import os
-
+import numpy as np
 from pyrsos.logger.experiment import Experiment, Metric
+from sklearn.cross_validation import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder
 from torch.nn import CrossEntropyLoss
@@ -23,18 +24,25 @@ from utils.training import class_weigths, epoch_summary, save_checkpoint
 
 # load dataset
 config = ConfLangModel
-dataset = 'emotion_data'
-name = 'emotion_data'
-train_data = sentence_dataset(os.path.join(DATA_DIR, dataset, "train.txt"))
-val_data = sentence_dataset(os.path.join(DATA_DIR, dataset, "valid.txt"))
+dataset = 'emotion2M'
+name = 'emotion_with_2M'
+
+data = sentence_dataset(os.path.join(DATA_DIR, dataset, "emotion_final.txt"))
+y = np.zeros(len(data))
+
+train_data, val_data, _, _ = train_test_split(data, y,
+                                              test_size=0.2,
+                                              random_state=13)
 # train_data = train_data[:1000]
 # val_data = val_data[:100]
 #####################################################################
 # Define Dataloaders
 #####################################################################
 
-preprocessor = twitter_preprocessor()
-# preprocessor = None
+# Prosoxh! to emotion dataset einai hdh PREPROCESSED me ekphrasis!
+
+# preprocessor = twitter_preprocessor()
+preprocessor = None
 if preprocessor is None:
     train_name = "train_simple_split_{}".format(dataset)
     val_name = "valid_simple_split_{}".format(dataset)

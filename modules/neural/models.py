@@ -47,9 +47,12 @@ class Classifier(nn.Module):
                                        layers=attention_layers,
                                        dropout=attention_dropout,
                                        batch_first=True)
-
-        self.output = nn.Linear(in_features=self.encoder.feature_size*2,
-                                out_features=out_size)
+        if self.concat_repr:
+            self.output = nn.Linear(in_features=self.encoder.feature_size*2,
+                                    out_features=out_size)
+        else:
+            self.output = nn.Linear(in_features=self.encoder.feature_size,
+                                    out_features=out_size)
 
     def forward(self, x, lengths):
         # index of word before target word

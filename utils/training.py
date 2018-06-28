@@ -224,7 +224,8 @@ def debug_s2s_batch(outputs, labels, datasource):
         print()
 
 
-def save_checkpoint(name, model, optimizer, vocab=None, loss=None, acc=None, path=None, timestamp=False):
+def save_checkpoint(name, model, optimizer, vocab=None, loss=None,
+                    acc=None, path=None, timestamp=False):
     """
     Save a trained model, along with its optimizer, in order to be able to
     resume training

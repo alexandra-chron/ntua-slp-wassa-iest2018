@@ -95,7 +95,8 @@ test_loader = DataLoader(test_set, config["batch_eval"])
 classes = label_encoder.classes_.size
 
 # Define model, without pretrained embeddings
-model = Classifier(embeddings=weights, out_size=classes, concat_repr=True, **config).to(DEVICE)
+model = Classifier(embeddings=weights, out_size=classes,
+                   concat_repr=True, **config).to(DEVICE)
 
 #############################################################################
 # Transfer Learning (target takes source weights,except for linear layer)
@@ -151,13 +152,13 @@ def unfreeze_module(module, _optimizer):
 # Experiment
 #############################################################
 experiment = Experiment(config["name"], hparams=config)
-experiment.add_metric(Metric(name="f1_macro_with_pretr_lm_" + name, tags=["train", "val"],
+experiment.add_metric(Metric(name="f1_macro_" + name, tags=["train", "val"],
                              vis_type="line"))
 
-experiment.add_metric(Metric(name="acc_with_pretr_lm_" + name, tags=["train", "val"],
+experiment.add_metric(Metric(name="acc_" + name, tags=["train", "val"],
                              vis_type="line"))
 
-experiment.add_metric(Metric(name="loss_with_pretr_lm_" + name, tags=["train", "val"],
+experiment.add_metric(Metric(name="loss_" + name, tags=["train", "val"],
                              vis_type="line"))
 best_loss = None
 early_stopping = Early_stopping("max", config["patience"])
@@ -204,14 +205,14 @@ for epoch in range(1, config["epochs"] + 1):
         print("Early Stopping....")
         break
 
-    experiment.metrics["f1_macro_with_pretr_lm_" + name].append(tag="train", value=f1_macro_train)
-    experiment.metrics["f1_macro_with_pretr_lm_" + name].append(tag="val", value=f1_macro_val)
+    experiment.metrics["f1_macro_" + name].append(tag="train", value=f1_macro_train)
+    experiment.metrics["f1_macro_" + name].append(tag="val", value=f1_macro_val)
 
-    experiment.metrics["loss_with_pretr_lm_" + name].append(tag="train", value=avg_train_loss)
-    experiment.metrics["loss_with_pretr_lm_" + name].append(tag="val", value=avg_val_loss)
+    experiment.metrics["loss_" + name].append(tag="train", value=avg_train_loss)
+    experiment.metrics["loss_" + name].append(tag="val", value=avg_val_loss)
 
-    experiment.metrics["acc_with_pretr_lm_" + name].append(tag="train", value=acc_train)
-    experiment.metrics["acc_with_pretr_lm_" + name].append(tag="val", value=acc_val)
+    experiment.metrics["acc_" + name].append(tag="train", value=acc_train)
+    experiment.metrics["acc_" + name].append(tag="val", value=acc_val)
 
     epoch_summary("train", avg_train_loss)
     epoch_summary("val", avg_val_loss)
@@ -223,7 +224,7 @@ for epoch in range(1, config["epochs"] + 1):
     if not best_loss or avg_val_loss < best_loss:
         print("saving checkpoint...")
 
-        save_checkpoint_pre_lm("{}_{}".format("wassa_pretr_lm", now), model,
+        save_checkpoint_pre_lm("{}_{}".format(name, now), model,
                                optimizer, word2idx=word2idx, idx2word=idx2word,
                                loss=avg_val_loss, acc=acc(y, y_pred), f1=f1_macro_val,
                                timestamp=False)
