@@ -8,7 +8,8 @@ from pyrsos.logger.experiment import Experiment, Metric
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder
 from torch.nn import CrossEntropyLoss
-from torch.optim import Adam, SGD
+from torch.optim import Adam
+from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 
 from config import BASE_PATH, DEVICE
@@ -35,7 +36,7 @@ unfreeze_epoque = {"embed": 5,
                    "hidden": 3}
 
 # at which epoch the fine-tuning starts
-name = "yolo"
+name = "wassa_2M_ep2_GU_lr_weight_decay"
 
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
 _, _, weights = load_word_vectors(file, 300)
@@ -59,7 +60,7 @@ y_test = label_encoder.transform(y_test)
 
 # Load Pretrained LM
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
-    load_checkpoint("emotion_data_18-06-26_18:01:24")
+    load_checkpoint("emotion_with_2M_18-06-28_18:04:54")
 pretr_model.to(DEVICE)
 
 # # Force target task to use pretrained vocab
@@ -129,7 +130,8 @@ parameters = filter(lambda p: p.requires_grad is True, model.parameters())
 
 # optimizer = Adam(parameters, betas=(0.5, 0.99),
 #                  weight_decay=config["weight_decay"], amsgrad=True)
-optimizer = Adam(parameters, amsgrad=True)
+optimizer = Adam(parameters, weight_decay=0.0005, amsgrad=True)
+scheduler = MultiStepLR(optimizer, milestones=[4, 7], gamma=0.1)
 
 #############################################################################
 # Training Pipeline
@@ -167,11 +169,14 @@ experiment.add_metric(Metric(name="acc_" + name, tags=["train", "val"],
 experiment.add_metric(Metric(name="loss_" + name, tags=["train", "val"],
                              vis_type="line"))
 best_loss = None
-early_stopping = Early_stopping("max", config["patience"])
+early_stopping = Early_stopping("min", config["patience"])
 
 now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
 
 for epoch in range(1, config["epochs"] + 1):
+
+    scheduler.step()
+
     # train the model for one epoch
     train_clf(epoch, model, train_loader, criterion, optimizer, DEVICE)
     print()
@@ -209,9 +214,12 @@ for epoch in range(1, config["epochs"] + 1):
     ###############################################################
     # Early Stopping
     ###############################################################
-    if early_stopping.stop(f1_macro_val):
+    if early_stopping.stop(avg_val_loss):
         print("Early Stopping....")
         break
+
+    lr = scheduler.optimizer.param_groups[0]['lr']
+    print("\tLR:{}".format(lr))
 
     experiment.metrics["f1_macro_" + name].append(tag="train", value=f1_macro_train)
     experiment.metrics["f1_macro_" + name].append(tag="val", value=f1_macro_val)
