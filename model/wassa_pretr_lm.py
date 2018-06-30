@@ -8,7 +8,7 @@ from pyrsos.logger.experiment import Experiment, Metric
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder
 from torch.nn import CrossEntropyLoss
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.utils.data import DataLoader
 
 from config import BASE_PATH, DEVICE
@@ -27,12 +27,15 @@ from utils.training import class_weigths, load_checkpoint, epoch_summary, save_c
 # pretr_model, pretr_optimizer, pretr_vocab, loss, acc, f1 = \
 #     load_checkpoint_with_f1("wassa_baseline!_18-06-25_15:00:10")
 
-# finetune = None
-# finetune = {None, embed, all}
+unfreeze = True
+freeze = {"embed": True,
+          "hidden": True}
 
-name = "wassa_emotion_lm_conc_28ep"
-unfreeze = 0
+unfreeze_epoque = {"embed": 5,
+                   "hidden": 3}
+
 # at which epoch the fine-tuning starts
+name = "yolo"
 
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
 _, _, weights = load_word_vectors(file, 300)
@@ -107,20 +110,26 @@ model.encoder = pretr_model.encoder
 #############################################################################
 # Fine tune either: No layer, only embedding layer, all layers
 #############################################################################
-# if finetune is not None:
-#     for param in model.parameters():
-#         param.requires_grad = False
-# elif finetune == "embed":
-#     model.embedding.requires_grad = False
+
+if freeze["embed"]:
+    for param in model.embedding.parameters():
+        param.requires_grad = False
+if freeze["hidden"]:
+    for param in model.encoder.parameters():
+        param.requires_grad = False
+    for param in model.attention.parameters():
+        param.requires_grad = False
 
 print(model)
 
 weights = class_weigths(train_set.labels, to_pytorch=True)
 weights = weights.to(DEVICE)
 criterion = CrossEntropyLoss(weight=weights)
-parameters = filter(lambda p: p.requires_grad, model.parameters())
-optimizer = Adam(parameters, amsgrad=True)
+parameters = filter(lambda p: p.requires_grad is True, model.parameters())
 
+# optimizer = Adam(parameters, betas=(0.5, 0.99),
+#                  weight_decay=config["weight_decay"], amsgrad=True)
+optimizer = Adam(parameters, amsgrad=True)
 
 #############################################################################
 # Training Pipeline
@@ -137,15 +146,12 @@ def f1_micro(y, y_hat):
     return f1_score(y, y_hat, average='micro')
 
 
-def unfreeze_module(module, _optimizer):
-    for _param in module.parameters():
-        _param.requires_grad = True
-        module.requires_grad = True
-
-    _optimizer.add_param_group(
-        {'params': list(
-            module.parameters())}
-    )
+def unfreeze_module(module, optimizer):
+    for param in module.parameters():
+        param.requires_grad = True
+    my_dict = {'params': list(
+               module.parameters())}
+    optimizer.add_param_group(my_dict)
 
 
 #############################################################
@@ -191,12 +197,14 @@ for epoch in range(1, config["epochs"] + 1):
     ###############################################################
     # Unfreezing the model after X epochs
     ###############################################################
-    if unfreeze > 0:
-        if epoch == unfreeze:
-            print("Unfreeze transfer-learning model...")
+    if unfreeze:
+        if epoch == unfreeze_epoque["embed"]:
+            print("Unfreezing embedding layer...")
             unfreeze_module(model.embedding, optimizer)
-            # unfreeze_module(model.encoder, optimizer)
-            # unfreeze_module(model.attention, optimizer)
+        if epoch == unfreeze_epoque["hidden"]:
+            print("Unfreezing encoder...")
+            unfreeze_module(model.encoder, optimizer)
+            unfreeze_module(model.attention, optimizer)
 
     ###############################################################
     # Early Stopping
