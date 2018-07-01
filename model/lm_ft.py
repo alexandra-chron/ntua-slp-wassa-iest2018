@@ -9,7 +9,6 @@ from config import DEVICE
 from model.params import ConfLangModelFT
 from model.pipelines import train_sent_lm, eval_sent_lm
 from modules.neural.dataloading import LangModelDataset
-from modules.neural.models import LangModel
 from utils.dataloaders import load_wassa
 from utils.early_stopping import Early_stopping
 from utils.nlp import twitter_preprocessor
@@ -18,8 +17,15 @@ from utils.training import epoch_summary, save_checkpoint, load_checkpoint
 # load dataset
 
 config = ConfLangModelFT
-name = 'LM_FT'
+name = 'LM_FT_GU_3_6'
 dataset = 'wassa'
+
+unfreeze = True
+freeze = {"embed": True,
+          "hidden": True}
+
+unfreeze_epoque = {"embed": 6,
+                   "hidden": 3}
 
 # Load Pretrained LM
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
@@ -63,13 +69,37 @@ ntokens = len(train_set.vocab)
 print("Vocab:", ntokens)
 print("Datasets: train={}, val={}".format(len(train_set), len(val_set)))
 
-model = LangModel(ntokens, **config).to(DEVICE)
+#############################################################################
+# Transfer Learning
+#############################################################################
+model = pretr_model
 print(model)
+
+#############################################################################
+# Fine tune either: No layer, only embedding layer, all layers
+#############################################################################
+
+if freeze["embed"]:
+    for param in model.embedding.parameters():
+        param.requires_grad = False
+if freeze["hidden"]:
+    for param in model.encoder.parameters():
+        param.requires_grad = False
+
 
 loss_function = CrossEntropyLoss(ignore_index=0)
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = Adam(parameters, amsgrad=True)
 # scheduler = MultiStepLR(optimizer, milestones=[20, 30], gamma=0.1)
+
+
+def unfreeze_module(module, optimizer):
+    for param in module.parameters():
+        param.requires_grad = True
+    my_dict = {'params': list(
+               module.parameters())}
+    optimizer.add_param_group(my_dict)
+
 
 #############################################################
 # Experiment
@@ -79,7 +109,7 @@ experiment.add_metric(Metric(name="loss_lm_" + name, tags=["train", "val"],
                              vis_type="line"))
 experiment.add_metric(Metric(name="ppl_lm_" + name, tags=["train", "val"],
                              vis_type="line"))
-early_stopping = Early_stopping("min", config["patience"]) # metric = val_loss
+early_stopping = Early_stopping("min", config["patience"])  # metric = val_loss
 
 best_loss = None
 
@@ -97,6 +127,17 @@ for epoch in range(config["epochs"]):
 
     # lr = scheduler.optimizer.param_groups[0]['lr']
     # print("\tLR:{}".format(lr))
+
+    ###############################################################
+    # Unfreezing the model after X epochs
+    ###############################################################
+    if unfreeze:
+        if epoch == unfreeze_epoque["embed"]:
+            print("Unfreezing embedding layer...")
+            unfreeze_module(model.embedding, optimizer)
+        if epoch == unfreeze_epoque["hidden"]:
+            print("Unfreezing encoder...")
+            unfreeze_module(model.encoder, optimizer)
 
     #############################################
     # Early Stopping
