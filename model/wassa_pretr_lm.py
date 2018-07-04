@@ -16,7 +16,7 @@ from config import BASE_PATH, DEVICE
 from model.params import WASSA_WITH_PRETR_LM, ConfLangModel
 from model.pipelines import train_clf, eval_clf
 from modules.neural.dataloading import WordDataset
-from modules.neural.models import Classifier
+from modules.neural.models import Classifier, Classifier_extralinear
 from utils.dataloaders import load_wassa
 from utils.early_stopping import Early_stopping
 from utils.load_embeddings import load_word_vectors
@@ -99,6 +99,8 @@ test_loader = DataLoader(test_set, config["batch_eval"])
 classes = label_encoder.classes_.size
 
 # Define model, without pretrained embeddings
+# model = Classifier_extralinear(embeddings=weights, out_size=classes,
+#                                concat_repr=True, **config).to(DEVICE)
 model = Classifier(embeddings=weights, out_size=classes,
                    concat_repr=True, **config).to(DEVICE)
 
@@ -107,6 +109,8 @@ model = Classifier(embeddings=weights, out_size=classes,
 #############################################################################
 model.embedding = pretr_model.embedding
 model.encoder = pretr_model.encoder
+# model.embedding.noise.mean = 0.2
+# model.encoder.drop_rnn.p = 0.3
 
 #############################################################################
 # Fine tune either: No layer, only embedding layer, all layers
@@ -122,7 +126,6 @@ if freeze["hidden"]:
         param.requires_grad = False
 
 print(model)
-
 weights = class_weigths(train_set.labels, to_pytorch=True)
 weights = weights.to(DEVICE)
 criterion = CrossEntropyLoss(weight=weights)
@@ -130,8 +133,8 @@ parameters = filter(lambda p: p.requires_grad is True, model.parameters())
 
 # optimizer = Adam(parameters, betas=(0.5, 0.99),
 #                  weight_decay=config["weight_decay"], amsgrad=True)
-optimizer = Adam(parameters, weight_decay=0.0005, amsgrad=True)
-scheduler = MultiStepLR(optimizer, milestones=[4, 7], gamma=0.1)
+optimizer = Adam(parameters, amsgrad=True)
+# scheduler = MultiStepLR(optimizer, milestones=[4, 7], gamma=0.1)
 
 #############################################################################
 # Training Pipeline
@@ -175,7 +178,7 @@ now = datetime.datetime.now().strftime("%y-%m-%d_%H:%M:%S")
 
 for epoch in range(1, config["epochs"] + 1):
 
-    scheduler.step()
+    # scheduler.step()
 
     # train the model for one epoch
     train_clf(epoch, model, train_loader, criterion, optimizer, DEVICE)
@@ -218,8 +221,8 @@ for epoch in range(1, config["epochs"] + 1):
         print("Early Stopping....")
         break
 
-    lr = scheduler.optimizer.param_groups[0]['lr']
-    print("\tLR:{}".format(lr))
+    # lr = scheduler.optimizer.param_groups[0]['lr']
+    # print("\tLR:{}".format(lr))
 
     experiment.metrics["f1_macro_" + name].append(tag="train", value=f1_macro_train)
     experiment.metrics["f1_macro_" + name].append(tag="val", value=f1_macro_val)

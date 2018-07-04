@@ -84,6 +84,95 @@ class Classifier(nn.Module):
         return logits, attentions
 
 
+class Classifier_extralinear(nn.Module):
+    def __init__(self, embeddings=None, out_size=1, concat_repr=False, **kwargs):
+        """
+        Define the layer of the model and perform the initializations
+        of the layers (wherever it is necessary)
+        Args:
+            embeddings (numpy.ndarray): the 2D ndarray with the word vectors
+            out_size ():
+        """
+        super(Classifier_extralinear, self).__init__()
+        embed_finetune = kwargs.get("embed_finetune", False)
+        embed_noise = kwargs.get("embed_noise", 0.)
+        embed_dropout = kwargs.get("embed_dropout", 0.)
+
+        encoder_size = kwargs.get("encoder_size", 128)
+        encoder_layers = kwargs.get("encoder_layers", 1)
+        encoder_dropout = kwargs.get("encoder_dropout", 0.)
+        bidirectional = kwargs.get("encoder_bidirectional", False)
+        attention_layers = kwargs.get("attention_layers", 1)
+        attention_dropout = kwargs.get("attention_dropout", 0.)
+        extralinear_size = kwargs.get("extralinear", 300)
+        extra_dropout = kwargs.get("extra_drop", 0.2)
+        self.attention_context = kwargs.get("attention_context", False)
+        self.concat_repr = concat_repr
+        ########################################################
+
+        self.embedding = Embed(
+            num_embeddings=embeddings.shape[0],
+            embedding_dim=embeddings.shape[1],
+            embeddings=embeddings,
+            noise=embed_noise,
+            dropout=embed_dropout,
+            trainable=embed_finetune)
+
+        self.encoder = RNNEncoder(input_size=embeddings.shape[1],
+                                  rnn_size=encoder_size,
+                                  num_layers=encoder_layers,
+                                  bidirectional=bidirectional,
+                                  dropout=encoder_dropout)
+
+        self.attention = SelfAttention(self.encoder.feature_size,
+                                       layers=attention_layers,
+                                       dropout=attention_dropout,
+                                       batch_first=True)
+
+        if self.concat_repr:
+            self.extralinear = nn.Linear(in_features=self.encoder.feature_size*2,
+                                         out_features=extralinear_size)
+        else:
+            self.extralinear = nn.Linear(in_features=self.encoder.feature_size,
+                                         out_features=extralinear_size)
+
+        self.drop_extra = nn.Dropout(extra_dropout)
+
+        self.output = nn.Linear(in_features=extralinear_size, out_features=out_size)
+
+
+    def forward(self, x, lengths):
+        # index of word before target word
+        # In lm vocab()always idx2word[4]=[#triggerword#]
+
+        embeddings = self.embedding(x)
+        outputs, last_output = self.encoder(embeddings, lengths)
+        representations, attentions = self.attention(outputs, lengths)
+
+        if self.concat_repr:
+            for i, tweet in enumerate(x):
+                if 4 not in tweet:
+                    print(i, tweet)
+
+            idxs_cpu = [(list(x[i].cpu()).index(4)-1) for i in range(0, len(x))]  # very slow
+            idxs = [(x[i] == 4).nonzero() for i in range(0, len(x))]
+            # todo: -1 to these idxs to be correct
+            # hiddens for concat
+            hiddens = [outputs[i][idxs_cpu[i]] for i in range(0, len(idxs))]
+            hiddens_tensor = torch.stack(hiddens)
+
+            # concat outputs[ind] me representations
+            new_representations = torch.cat((representations, hiddens_tensor), 1)
+            logits_ex = self.extralinear(new_representations)
+
+        else:
+            logits_ex = self.extralinear(representations)
+
+        logits_ex = self.drop_extra(logits_ex)
+
+        logits = self.output(logits_ex)
+        return logits, attentions
+
 class LangModel(nn.Module):
     def __init__(self, ntokens, **kwargs):
         super(LangModel, self).__init__()
