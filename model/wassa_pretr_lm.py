@@ -28,15 +28,20 @@ from utils.training import class_weigths, load_checkpoint, epoch_summary, save_c
 # pretr_model, pretr_optimizer, pretr_vocab, loss, acc, f1 = \
 #     load_checkpoint_with_f1("wassa_baseline!_18-06-25_15:00:10")
 
+extral = False
+
+discr = False
+d = 0.6
+
 unfreeze = True
 freeze = {"embed": True,
           "hidden": True}
 
-unfreeze_epoque = {"embed": 5,
-                   "hidden": 3}
+unfreeze_epoque = {"embed": 6,
+                   "hidden": 4}
 
 # at which epoch the fine-tuning starts
-name = "wassa_2M_ep2_GU_lr_weight_decay"
+name = "wassa_LM_FT_2M_GU24_noconc_GU46_discr"
 
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
 _, _, weights = load_word_vectors(file, 300)
@@ -60,7 +65,7 @@ y_test = label_encoder.transform(y_test)
 
 # Load Pretrained LM
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
-    load_checkpoint("emotion_with_2M_18-06-28_18:04:54")
+    load_checkpoint("LM_FT_2M_GU_2_4_18-07-02_13:05:51")
 pretr_model.to(DEVICE)
 
 # # Force target task to use pretrained vocab
@@ -71,8 +76,8 @@ ntokens = pretr_vocab.size
 # Bug: need to rename fu!#%ing triggerword
 # because in the vocab built in pretrained LM we didn't name it correctly
 
-word2idx['<triggerword>'] = word2idx.pop('[#triggerword#]')
-idx2word[4] = '<triggerword>'
+# word2idx['<triggerword>'] = word2idx.pop('[#triggerword#]')
+# idx2word[4] = '<triggerword>'
 
 #####################################################################
 # Define Dataloaders
@@ -99,10 +104,12 @@ test_loader = DataLoader(test_set, config["batch_eval"])
 classes = label_encoder.classes_.size
 
 # Define model, without pretrained embeddings
-# model = Classifier_extralinear(embeddings=weights, out_size=classes,
-#                                concat_repr=True, **config).to(DEVICE)
-model = Classifier(embeddings=weights, out_size=classes,
-                   concat_repr=True, **config).to(DEVICE)
+if extral:
+    model = Classifier_extralinear(embeddings=weights, out_size=classes,
+                                   concat_repr=False, **config).to(DEVICE)
+else:
+    model = Classifier(embeddings=weights, out_size=classes,
+                       concat_repr=False, **config).to(DEVICE)
 
 #############################################################################
 # Transfer Learning (target takes source weights,except for linear layer)
@@ -112,6 +119,9 @@ model.encoder = pretr_model.encoder
 # model.embedding.noise.mean = 0.2
 # model.encoder.drop_rnn.p = 0.3
 
+model.embedding.noise.mean = 0.2
+model.embedding.dropout.p = 0.4
+model.encoder.drop_rnn.p = 0.4
 #############################################################################
 # Fine tune either: No layer, only embedding layer, all layers
 #############################################################################
@@ -126,15 +136,41 @@ if freeze["hidden"]:
         param.requires_grad = False
 
 print(model)
+
 weights = class_weigths(train_set.labels, to_pytorch=True)
 weights = weights.to(DEVICE)
 criterion = CrossEntropyLoss(weight=weights)
 parameters = filter(lambda p: p.requires_grad is True, model.parameters())
 
-# optimizer = Adam(parameters, betas=(0.5, 0.99),
-#                  weight_decay=config["weight_decay"], amsgrad=True)
-optimizer = Adam(parameters, amsgrad=True)
-# scheduler = MultiStepLR(optimizer, milestones=[4, 7], gamma=0.1)
+if discr:
+    #############################################################################
+    # Discriminative Fine-Tuning (smaller lr as the layer becomes more general)
+    #############################################################################
+    embed_params = filter(lambda p: p.requires_grad is True, model.embedding.parameters())
+    encoder_params = filter(lambda p: p.requires_grad is True, model.encoder.parameters())
+    attention_params = filter(lambda p: p.requires_grad is True, model.attention.parameters())
+    output_params = filter(lambda p: p.requires_grad is True, model.output.parameters())
+    if extral:
+        extralinear_params = filter(lambda p: p.requires_grad is True, model.extralinear.parameters())
+
+        optimizer = Adam([
+                        # {'params': embed_params, 'lr': 1e-3*0.1*0.1},
+                        # {'params': encoder_params, 'lr': 1e-3*0.1},
+                        # {'params': attention_params, 'lr': 1e-3*0.1},
+                        {'params': output_params, 'lr': 0.00146},
+                        {'params': extralinear_params, 'lr': 0.00146}
+                        ], lr=0.00146, amsgrad=True)
+    else:
+        optimizer = Adam([
+                        # {'params': embed_params, 'lr': 1e-3*0.1*0.1},
+                        # {'params': encoder_params, 'lr': 1e-3*0.1},
+                        # {'params': attention_params, 'lr': 1e-3*0.1},
+                        {'params': output_params, 'lr': 0.00146}
+                        ], lr=0.00146, amsgrad=True)
+
+else:
+    optimizer = Adam(parameters, amsgrad=True)
+
 
 #############################################################################
 # Training Pipeline
@@ -151,11 +187,11 @@ def f1_micro(y, y_hat):
     return f1_score(y, y_hat, average='micro')
 
 
-def unfreeze_module(module, optimizer):
+def unfreeze_module(module, optimizer, lr):
     for param in module.parameters():
         param.requires_grad = True
-    my_dict = {'params': list(
-               module.parameters())}
+    my_dict = {'params':
+               module.parameters(), "lr": lr}
     optimizer.add_param_group(my_dict)
 
 
@@ -207,12 +243,20 @@ for epoch in range(1, config["epochs"] + 1):
     ###############################################################
     if unfreeze:
         if epoch == unfreeze_epoque["embed"]:
+            if discr:
+                lr = 0.00146 * d * d
+            else:
+                lr = 1e-3
             print("Unfreezing embedding layer...")
-            unfreeze_module(model.embedding, optimizer)
+            unfreeze_module(model.embedding, optimizer, lr)
         if epoch == unfreeze_epoque["hidden"]:
             print("Unfreezing encoder...")
-            unfreeze_module(model.encoder, optimizer)
-            unfreeze_module(model.attention, optimizer)
+            if discr:
+                lr = 0.00146 * d
+            else:
+                lr = 1e-3
+            unfreeze_module(model.encoder, optimizer, lr)
+            unfreeze_module(model.attention, optimizer, lr)
 
     ###############################################################
     # Early Stopping
