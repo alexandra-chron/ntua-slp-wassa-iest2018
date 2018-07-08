@@ -41,7 +41,7 @@ unfreeze_epoque = {"embed": 6,
                    "hidden": 4}
 
 # at which epoch the fine-tuning starts
-name = "wassa_LM_FT_2M_GU24_noconc_GU46_discr"
+name = "wassa_2M_ep2_GU_lr_weight_decay"
 
 file = os.path.join(BASE_PATH, "embeddings", "ntua_twitter_300.txt")
 _, _, weights = load_word_vectors(file, 300)
@@ -65,7 +65,7 @@ y_test = label_encoder.transform(y_test)
 
 # Load Pretrained LM
 pretr_model, pretr_optimizer, pretr_vocab, loss, acc = \
-    load_checkpoint("LM_FT_2M_GU_2_4_18-07-02_13:05:51")
+    load_checkpoint("emotion_with_2M_18-06-28_18:04:54")
 pretr_model.to(DEVICE)
 
 # # Force target task to use pretrained vocab
