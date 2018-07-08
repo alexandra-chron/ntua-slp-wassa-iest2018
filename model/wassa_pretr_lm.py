@@ -32,8 +32,8 @@ unfreeze = True
 freeze = {"embed": True,
           "hidden": True}
 
-unfreeze_epoque = {"embed": 5,
-                   "hidden": 3}
+unfreeze_epoque = {"embed": 9,
+                   "hidden": 6}
 
 # at which epoch the fine-tuning starts
 name = "wassa_2M_ep2_GU_lr_weight_decay"
@@ -70,9 +70,9 @@ ntokens = pretr_vocab.size
 
 # Bug: need to rename fu!#%ing triggerword
 # because in the vocab built in pretrained LM we didn't name it correctly
-
-word2idx['<triggerword>'] = word2idx.pop('[#triggerword#]')
-idx2word[4] = '<triggerword>'
+#
+# word2idx['<triggerword>'] = word2idx.pop('[#triggerword#]')
+# idx2word[4] = '<triggerword>'
 
 #####################################################################
 # Define Dataloaders
@@ -131,10 +131,23 @@ weights = weights.to(DEVICE)
 criterion = CrossEntropyLoss(weight=weights)
 parameters = filter(lambda p: p.requires_grad is True, model.parameters())
 
-# optimizer = Adam(parameters, betas=(0.5, 0.99),
-#                  weight_decay=config["weight_decay"], amsgrad=True)
-optimizer = Adam(parameters, amsgrad=True)
-# scheduler = MultiStepLR(optimizer, milestones=[4, 7], gamma=0.1)
+# optimizer = Adam(parameters, amsgrad=True)
+
+#############################################################################
+# Discriminative Fine-Tuning (smaller lr as the layer becomes more general)
+#############################################################################
+embed_params = filter(lambda p: p.requires_grad is True, model.embedding.parameters())
+encoder_params = filter(lambda p: p.requires_grad is True, model.encoder.parameters())
+attention_params = filter(lambda p: p.requires_grad is True, model.attention.parameters())
+output_params = filter(lambda p: p.requires_grad is True, model.output.parameters())
+
+optimizer = Adam([
+                # {'params': embed_params, 'lr': 1e-3*0.1*0.1},
+                # {'params': encoder_params, 'lr': 1e-3*0.1},
+                # {'params': attention_params, 'lr': 1e-3*0.1},
+                {'params': output_params, 'lr': 1e-3}
+                ], lr=1e-3, amsgrad=True)
+
 
 #############################################################################
 # Training Pipeline
@@ -154,10 +167,9 @@ def f1_micro(y, y_hat):
 def unfreeze_module(module, optimizer):
     for param in module.parameters():
         param.requires_grad = True
-    my_dict = {'params': list(
-               module.parameters())}
+    my_dict = {'params':
+               module.parameters(), "lr": lr}
     optimizer.add_param_group(my_dict)
-
 
 #############################################################
 # Experiment
@@ -207,10 +219,12 @@ for epoch in range(1, config["epochs"] + 1):
     ###############################################################
     if unfreeze:
         if epoch == unfreeze_epoque["embed"]:
+            lr = 1e-3*0.1*0.1
             print("Unfreezing embedding layer...")
             unfreeze_module(model.embedding, optimizer)
         if epoch == unfreeze_epoque["hidden"]:
             print("Unfreezing encoder...")
+            lr = 1e-3 * 0.1
             unfreeze_module(model.encoder, optimizer)
             unfreeze_module(model.attention, optimizer)
 
