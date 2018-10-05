@@ -51,7 +51,7 @@ In order to make our codebase more accessible and easier to extend, we provide a
 
 **Bibliography**
 
-Some papers on which this repo is based:
+A few relevant and very important papers to our work are presented below:
 
 https://arxiv.org/abs/1801.06146
 
