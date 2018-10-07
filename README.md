@@ -13,12 +13,12 @@ Citation:
 ```
 
 # Quick Notes
-There are 3 options for Transfer Learning in this model:
+There are 3 approaches of Transfer Learning in our proposed model:
 
 **First: Pretrain a LM and transfer its weights to the target-task classifier**
 
 1) Pretrain the LM using ```models/lm.py```
-2) Fine-tune the LM on your own dataset using ```models/lm_ft.py```
+2) Fine-tune the LM on your own (target) dataset using ```models/lm_ft.py```
 3) Train the classifier using ```wassa_pretr_lm.py``` (which transfers the weights of the pretrained LM to a classifier and adds Self-Attention and a task-specific linear layer)
 
 **Second: Pretrain a classifier on a different dataset and transfer its weights to the target-task classifier**
