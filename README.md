@@ -36,7 +36,8 @@ In order to make our codebase more accessible and easier to extend, we provide a
 - ```twitter100K/``` contains unlabeled data used for pretraining an LM
 - ```semeval2017A/``` and ```wassa_2018/``` contain the labeled datasets used for SemEval17 Task4A and WASSA IEST 2018 respectively
 
-`embeddings`: the pretrained word vectors used should be put here (i.e. word2vec, GloVe).
+`embeddings`: our pretrained word2vec word vectors are made publicly available here (ntua_twitter_300.txt), but any other could be used instead.
+
 
 `model`: scripts for running:
 - IEST classifier ```wassa.py```
