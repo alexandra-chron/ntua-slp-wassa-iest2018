@@ -13,6 +13,9 @@ Citation:
 ```
 
 # Quick Notes
+Our pretrained word embeddings are available here [https://drive.google.com/file/d/1b-w7xf0d4zFmVoe9kipBHUwfoefFvU2t/view](ntua_twitter_300.txt)
+
+
 There are 3 approaches of Transfer Learning in our proposed model:
 
 **First: Pretrain a LM and transfer its weights to the target-task classifier**
@@ -36,7 +39,7 @@ In order to make our codebase more accessible and easier to extend, we provide a
 - ```twitter100K/``` contains unlabeled data used for pretraining an LM
 - ```semeval2017A/``` and ```wassa_2018/``` contain the labeled datasets used for SemEval17 Task4A and WASSA IEST 2018 respectively
 
-`embeddings`: our pretrained word2vec word vectors are made publicly available here (ntua_twitter_300.txt), but any other could be used instead.
+`embeddings`: pretrained word2vec embeddings should be put here.
 
 
 `model`: scripts for running:
