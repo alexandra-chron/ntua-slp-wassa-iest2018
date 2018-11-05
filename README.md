@@ -13,7 +13,7 @@ Citation:
 ```
 
 # Quick Notes
-Our pretrained word embeddings are available here [https://drive.google.com/file/d/1b-w7xf0d4zFmVoe9kipBHUwfoefFvU2t/view](ntua_twitter_300.txt)
+Our pretrained word embeddings are available here [ntua_twitter_300.txt](https://drive.google.com/file/d/1b-w7xf0d4zFmVoe9kipBHUwfoefFvU2t/view)
 
 
 There are 3 approaches of Transfer Learning in our proposed model:
