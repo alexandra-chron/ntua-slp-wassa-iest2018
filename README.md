@@ -1,6 +1,6 @@
 # Overview
 This repository contains the source code of the models submitted by NTUA-SLP team in IEST of WASSA 2018 at EMNLP 2018. 
-The model is described in the paper: https://arxiv.org/abs/1809.00717
+The model is described in the paper: http://aclweb.org/anthology/W18-6209
 
 Citation:
 ```
