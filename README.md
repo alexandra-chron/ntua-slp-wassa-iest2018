@@ -4,11 +4,18 @@ The model is described in the paper: https://arxiv.org/abs/1809.00717
 
 Citation:
 ```
-@article{chronopoulou2018ntua,
-  title={NTUA-SLP at IEST 2018: Ensemble of Neural Transfer Methods for Implicit Emotion Classification},
-  author={Chronopoulou, Alexandra and Margatina, Aikaterini and Baziotis, Christos and Potamianos, Alexandros},
-  journal={arXiv preprint arXiv:1809.00717},
-  year={2018}
+@InProceedings{W18-6209,
+  author = 	"Chronopoulou, Alexandra
+		and Margatina, Aikaterini
+		and Baziotis, Christos
+		and Potamianos, Alexandros",
+  title = 	"NTUA-SLP at IEST 2018: Ensemble of Neural Transfer Methods for Implicit Emotion Classification",
+  booktitle = 	"Proceedings of the 9th Workshop on Computational Approaches to Subjectivity, Sentiment and Social Media Analysis",
+  year = 	"2018",
+  publisher = 	"Association for Computational Linguistics",
+  pages = 	"57--64",
+  location = 	"Brussels, Belgium",
+  url = 	"http://aclweb.org/anthology/W18-6209"
 }
 ```
 
