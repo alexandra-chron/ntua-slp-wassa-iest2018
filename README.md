@@ -25,18 +25,18 @@ Our pretrained word embeddings are available here: [ntua_twitter_300.txt](https:
 
 There are 3 approaches of Transfer Learning in our proposed model:
 
-**First: Pretrain a LM and transfer its weights to the target-task classifier**
+**First: Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model**
 
 1) Pretrain the LM using ```models/lm.py```
 2) Fine-tune the LM on your own (target) dataset using ```models/lm_ft.py```
-3) Train the classifier using ```wassa_pretr_lm.py``` (which transfers the weights of the pretrained LM to a classifier and adds Self-Attention and a task-specific linear layer)
+3) Train the classification model using ```wassa_pretr_lm.py``` (initializes the weights of the embedding and hidden layer with the LM and adds a Self-Attention mechanism and a classification layer)
 
-**Second: Pretrain a classifier on a different dataset and transfer its weights to the target-task classifier**
+**Second: Pretrain a LSTM-based attentive classification model on a different dataset and transfer its feature extractor to the target-task classification model**
 
 1) Pretrain a classifier using ```models/sentiment.py```
 2) Train the final classifier by using ```wassa.py``` and setting ```pretrained_classifier = True``` and providing the correspondent config file.
 
-**Third: Use pretrained word vectors and transfer their weights to the embedding layer of a classifier**
+**Third: Use pretrained word vectors to initialize the embedding layer of a classification model**
 - To do this, simply run ```wassa.py``` and make sure to provide the correspondent word2idx, idx2word and weights of the pretrained word vectors (word2vec, GloVe, fastText).
 # Documentation
 
