@@ -30,7 +30,9 @@ We use an ensemble of 3 different Transfer Learning approaches:
 **First) Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model:**
 
 <img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/ulmfit.png" width="380">
+
 ```cd model/```
+
 1) Pretrain the LM: ```python lm.py```
 2) Fine-tune the LM on your own (target) dataset: ```python lm_ft.py```
 3) Train the classification model: ```python wassa_pretr_lm.py``` (initializes the weights of the embedding and hidden layer with the LM and adds a Self-Attention mechanism and a classification layer)
