@@ -30,10 +30,10 @@ We use an ensemble of 3 different Transfer Learning approaches:
 **First) Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model:**
 
 <img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/ulmfit.png" width="380">
-
-1) Pretrain the LM using ```models/lm.py```
-2) Fine-tune the LM on your own (target) dataset using ```models/lm_ft.py```
-3) Train the classification model using ```wassa_pretr_lm.py``` (initializes the weights of the embedding and hidden layer with the LM and adds a Self-Attention mechanism and a classification layer)
+```cd model/```
+1) Pretrain the LM: ```python lm.py```
+2) Fine-tune the LM on your own (target) dataset: ```python lm_ft.py```
+3) Train the classification model: ```python wassa_pretr_lm.py``` (initializes the weights of the embedding and hidden layer with the LM and adds a Self-Attention mechanism and a classification layer)
 
 *This follows to a great degree ULMFiT by Howard and Ruder.*
 
@@ -42,11 +42,11 @@ We use an ensemble of 3 different Transfer Learning approaches:
 <img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/pre_cls.png" width="300">
 
 
-1) Pretrain a classifier using ```models/sentiment.py```
-2) Train the final classifier by using ```wassa.py``` and setting ```pretrained_classifier = True``` and providing the correspondent config file.
+1) Pretrain a classifier: ```python sentiment.py```
+2) Train the final classifier: ```python wassa.py``` (set ```pretrained_classifier = True``` and provide the correspondent config file.)
 
 **Third) Use pretrained word vectors to initialize the embedding layer of a classification model:**
-- To do this, simply run ```wassa.py``` and make sure to provide the correspondent word2idx, idx2word and weights of the pretrained word vectors (word2vec, GloVe, fastText).
+-  ```python wassa.py``` (set ```pretrained_classifier = False``` and provide the correspondent word2idx, idx2word and weights of the pretrained word vectors (word2vec, GloVe, fastText)).
 
 # Quick Notes
 Our pretrained word embeddings are available here: [ntua_twitter_300.txt](https://drive.google.com/file/d/1b-w7xf0d4zFmVoe9kipBHUwfoefFvU2t/view)
