@@ -22,24 +22,24 @@ Citation:
 Task: Classify twitter messages in one of **six emotion categories** (happy, sad, fear, anger, surprise, disgust) **without** the emotion word. 
 A typical tweet in this dataset has the following form:
 
- ```I'm \[#TARGETWORD#\] because I love you, I love you and I hate you.'' ``` (correct label: **angry**) 
+ ```I'm \[#TARGETWORD#\] because I love you, I love you and I hate you.```  (correct label: **angry**) 
 
 # Our approach
 We use an ensemble of 3 different Transfer Learning approaches:
 
-**First: Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model**
+**1) Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model:**
 
 1) Pretrain the LM using ```models/lm.py```
 2) Fine-tune the LM on your own (target) dataset using ```models/lm_ft.py```
 3) Train the classification model using ```wassa_pretr_lm.py``` (initializes the weights of the embedding and hidden layer with the LM and adds a Self-Attention mechanism and a classification layer)
 This follows to a great degree ULMFiT by Howard and Ruder.
 
-**Second: Pretrain a LSTM-based attentive classification model on a different dataset and transfer its feature extractor to the target-task classification model**
+**2) Pretrain a LSTM-based attentive classification model on a different dataset and transfer its feature extractor to the target-task classification model:**
 
 1) Pretrain a classifier using ```models/sentiment.py```
 2) Train the final classifier by using ```wassa.py``` and setting ```pretrained_classifier = True``` and providing the correspondent config file.
 
-**Third: Use pretrained word vectors to initialize the embedding layer of a classification model**
+**3) Use pretrained word vectors to initialize the embedding layer of a classification model:**
 - To do this, simply run ```wassa.py``` and make sure to provide the correspondent word2idx, idx2word and weights of the pretrained word vectors (word2vec, GloVe, fastText).
 
 # Quick Notes
@@ -71,8 +71,8 @@ In order to make our codebase more accessible and easier to extend, we provide a
 
 A few relevant and very important papers to our work are presented below:
 
-https://arxiv.org/abs/1801.06146
+```Universal Language Model Fine-tuning for Text Classification``` https://arxiv.org/abs/1801.06146
 
-http://arxiv.org/abs/1708.02182
+```Regularizing and Optimizing LSTM Language Models``` https://arxiv.org/abs/1708.02182
 
-http://arxiv.org/abs/1708.00524
+```Using millions of emoji occurrences to learn any-domain representations for detecting sentiment, emotion and sarcasm``` http://arxiv.org/abs/1708.00524
