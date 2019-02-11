@@ -27,7 +27,7 @@ A typical tweet in this dataset has the following form:
 # Our approach
 We use an ensemble of 3 different Transfer Learning approaches:
 
-**1) Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model:**
+**First) Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model:**
 
 <img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/ulmfit.png" width="380">
 
@@ -37,7 +37,7 @@ We use an ensemble of 3 different Transfer Learning approaches:
 
 *This follows to a great degree ULMFiT by Howard and Ruder.*
 
-**2) Pretrain a LSTM-based attentive classification model on a different dataset and transfer its feature extractor to the target-task classification model:**
+**Second) Pretrain a LSTM-based attentive classification model on a different dataset and transfer its feature extractor to the target-task classification model:**
 
 <img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/pre_cls.png" width="300">
 
@@ -45,7 +45,7 @@ We use an ensemble of 3 different Transfer Learning approaches:
 1) Pretrain a classifier using ```models/sentiment.py```
 2) Train the final classifier by using ```wassa.py``` and setting ```pretrained_classifier = True``` and providing the correspondent config file.
 
-**3) Use pretrained word vectors to initialize the embedding layer of a classification model:**
+**Third) Use pretrained word vectors to initialize the embedding layer of a classification model:**
 - To do this, simply run ```wassa.py``` and make sure to provide the correspondent word2idx, idx2word and weights of the pretrained word vectors (word2vec, GloVe, fastText).
 
 # Quick Notes
