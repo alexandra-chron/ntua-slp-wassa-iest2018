@@ -33,7 +33,7 @@ We use an ensemble of 3 different Transfer Learning approaches:
 
 ```cd model/```
 
-You can skip steps 1 and 2 (time-consuming) and use pretrained and fine-tuned LM: ``checkpoints/lang_model_2M_finetuned.pt```
+You can skip steps 1 and 2 (time-consuming) and use pretrained and fine-tuned LM: ```checkpoints/lang_model_2M_finetuned.pt```
 
 1) (can be skipped) Pretrain the LM: ```python lm.py```
 2) (can be skipped) Fine-tune the LM on your own (target) dataset: ```python lm_ft.py```
