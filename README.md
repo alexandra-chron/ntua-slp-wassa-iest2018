@@ -29,7 +29,7 @@ We use an ensemble of 3 different Transfer Learning approaches:
 
 **1) Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model:**
 
-<img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/ulmfit.png" width="300">
+<img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/ulmfit.png" width="380">
 
 1) Pretrain the LM using ```models/lm.py```
 2) Fine-tune the LM on your own (target) dataset using ```models/lm_ft.py```
@@ -39,7 +39,7 @@ We use an ensemble of 3 different Transfer Learning approaches:
 
 **2) Pretrain a LSTM-based attentive classification model on a different dataset and transfer its feature extractor to the target-task classification model:**
 
-<img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/pre_cls.png" width="370">
+<img src="https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/pre_cls.png" width="300">
 
 
 1) Pretrain a classifier using ```models/sentiment.py```
