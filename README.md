@@ -28,13 +28,16 @@ A typical tweet in this dataset has the following form:
 We use an ensemble of 3 different Transfer Learning approaches:
 
 **1) Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model:**
+![alt text](https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/ulmfit.pdf)
 
 1) Pretrain the LM using ```models/lm.py```
 2) Fine-tune the LM on your own (target) dataset using ```models/lm_ft.py```
 3) Train the classification model using ```wassa_pretr_lm.py``` (initializes the weights of the embedding and hidden layer with the LM and adds a Self-Attention mechanism and a classification layer)
-This follows to a great degree ULMFiT by Howard and Ruder.
+
+*This follows to a great degree ULMFiT by Howard and Ruder.*
 
 **2) Pretrain a LSTM-based attentive classification model on a different dataset and transfer its feature extractor to the target-task classification model:**
+![alt text](https://github.com/alexandra-chron/ntua-slp-wassa-iest2018/blob/master/pre_cls.pdf)
 
 1) Pretrain a classifier using ```models/sentiment.py```
 2) Train the final classifier by using ```wassa.py``` and setting ```pretrained_classifier = True``` and providing the correspondent config file.
