@@ -27,7 +27,7 @@ A typical tweet in this dataset has the following form:
 # Our approach
 We use an ensemble of 3 different Transfer Learning approaches:
 
-Before you proceed, ```pip install -r requirements.txt```
+Before you proceed, ```pip install -r ./requirements.txt```
 
 **First) Pretrain a LSTM-based language model (LM) and transfer it to a target-task classification model:**
 
