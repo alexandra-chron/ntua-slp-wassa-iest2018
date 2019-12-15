@@ -2,7 +2,7 @@ colorama==0.3.7
 ekphrasis==0.4.9
 ftfy==4.4.3
 matplotlib==2.2.2
-nltk==3.2.4
+nltk==3.4.5
 numpy==1.16.1
 pyrsos==0.2.2
 setuptools==36.2.5
