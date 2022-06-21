@@ -3,7 +3,7 @@ ekphrasis==0.4.9
 ftfy==4.4.3
 matplotlib==2.2.2
 nltk>=3.4.5
-numpy==1.16.1
+numpy==1.22.0
 pyrsos==0.2.2
 setuptools==36.2.5
 scikit-learn==0.20.2
